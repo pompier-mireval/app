@@ -1,0 +1,299 @@
+/* ---------- En-tête de page ---------- */
+.page-header { display: flex; flex-direction: column; gap: 3px; margin-bottom: 4px; }
+.page-title { font-size: 19px; font-weight: 700; letter-spacing: -0.3px; }
+.page-sub { font-size: 13px; color: var(--text-3); }
+
+/* ---------- Carte ---------- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  border-left: 3px solid var(--border);
+}
+/* L'accent de gauche encode un statut, pas une décoration : à utiliser
+   avec parcimonie, seulement quand la carte représente un état concret. */
+.card-accent-brand { border-left-color: var(--brand); }
+.card-accent-green { border-left-color: var(--green); }
+.card-accent-amber { border-left-color: var(--amber); }
+.card-accent-red { border-left-color: var(--red); }
+
+/* ---------- Boutons ---------- */
+.btn-primary {
+  background: var(--brand);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.12s ease;
+}
+.btn-primary:hover { background: var(--brand-strong); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.12s ease;
+}
+.btn-secondary:hover { background: var(--border); }
+
+/* ---------- Champs de formulaire ---------- */
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 12px; font-weight: 500; color: var(--text-2); }
+.field-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+
+.input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--text);
+  min-width: 0;
+}
+.input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+.checkbox-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  padding: 5px 10px 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface2);
+}
+.checkbox-pill:has(input:checked) {
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand-strong);
+}
+
+/* ---------- Statut : point coloré + libellé en phrase, pas de pastille MAJUSCULE ---------- */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.tone-neutral { background: var(--text-3); }
+.status-dot.tone-green { background: var(--green); }
+.status-dot.tone-amber { background: var(--amber); }
+.status-dot.tone-red { background: var(--red); }
+.status-dot.tone-brand { background: var(--brand); }
+
+/* ---------- Badge (réservé aux niveaux d'accès / étiquettes courtes) ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+}
+.badge-neutral { background: var(--surface2); color: var(--text-2); border: 1px solid var(--border); }
+.badge-green { background: var(--green-soft); color: var(--green); }
+.badge-amber { background: var(--amber-soft); color: var(--amber); }
+.badge-red { background: var(--red-soft); color: var(--red); }
+
+/* ---------- Liste ---------- */
+.list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.list-row:last-child { border-bottom: none; }
+
+.empty-state {
+  font-size: 12.5px;
+  color: var(--text-3);
+  padding: 4px 0;
+}
+
+.error-banner {
+  background: var(--red-soft);
+  color: var(--red);
+  border-left: 3px solid var(--red);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.success-banner {
+  background: var(--green-soft);
+  color: var(--green);
+  border-left: 3px solid var(--green);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.agent-link { color: inherit; text-decoration: none; font-weight: inherit; }
+.agent-link:hover { color: var(--brand); text-decoration: underline; }
+
+/* ---------- Agenda hebdomadaire des disponibilités ---------- */
+.dispo-agenda {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+@media (max-width: 700px) {
+  .dispo-agenda { grid-template-columns: repeat(2, 1fr); }
+}
+
+.dispo-agenda-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 8px;
+  background: var(--surface2);
+  min-height: 64px;
+  text-align: left;
+}
+.dispo-agenda-cell:hover { border-color: var(--brand); }
+
+.dispo-agenda-day { font-size: 11px; font-weight: 600; color: var(--text-2); text-transform: capitalize; }
+.dispo-agenda-add { font-size: 11px; color: var(--text-3); }
+.dispo-agenda-hours { font-size: 11px; }
+
+.dispo-agenda-cell.tone-empty { background: var(--surface2); }
+.dispo-agenda-cell.tone-green { background: var(--green-soft); border-color: var(--green); }
+.dispo-agenda-cell.tone-green .dispo-agenda-hours { color: var(--green); }
+.dispo-agenda-cell.tone-amber { background: var(--amber-soft); border-color: var(--amber); }
+.dispo-agenda-cell.tone-amber .dispo-agenda-hours { color: var(--amber); }
+.dispo-agenda-cell.tone-red { background: var(--red-soft); border-color: var(--red); }
+.dispo-agenda-cell.tone-red .dispo-agenda-hours { color: var(--red); }
+
+.stack { display: flex; flex-direction: column; gap: 16px; }
+.stack-sm { display: flex; flex-direction: column; gap: 8px; }
+
+/* ---------- Statistiques : barres comparatives, pas de gros chiffres ---------- */
+.stat-row { display: flex; flex-direction: column; gap: 5px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.stat-row:last-child { border-bottom: none; }
+
+.stat-row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.stat-agent-name { font-size: 13.5px; font-weight: 500; }
+.stat-count { font-size: 12px; color: var(--text-3); }
+.stat-count strong { color: var(--text); font-weight: 600; }
+
+.stat-bar-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.stat-bar-fill { height: 100%; background: var(--brand); border-radius: 3px; transition: width 0.2s ease; }
+
+.stat-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+
+/* ---------- Actions texte (édition inline) ---------- */
+.link-edit, .link-delete {
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0;
+}
+.link-edit { color: var(--text-3); }
+.link-edit:hover { color: var(--brand); text-decoration: underline; }
+.link-delete { color: var(--text-3); }
+.link-delete:hover { color: var(--red); text-decoration: underline; }
+
+.agent-inactif { opacity: 0.55; }
+
+/* ---------- Bascule Jour / Semaine ---------- */
+.view-toggle {
+  display: flex;
+  gap: 3px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+.view-toggle-btn {
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+.view-toggle-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+
+/* ---------- Grille hebdomadaire ---------- */
+.week-grid { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.week-grid th, .week-grid td {
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+.week-grid th { background: var(--surface2); font-weight: 600; color: var(--text-2); }
+.week-grid-vehicule-row td { background: var(--brand-soft); color: var(--brand-strong); font-weight: 600; }
+
+.week-cell-covered { background: var(--surface); }
+.week-cell-gap { background: var(--amber-soft); }
+.week-cell-selected { outline: 2px solid var(--brand); outline-offset: -2px; }
+
+.week-cell-btn {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: var(--text);
+  padding: 2px 0;
+  text-align: left;
+  width: 100%;
+}
+.week-cell-btn:hover { text-decoration: underline; }
+
+.print-only { display: none; }
+.week-cell-print { display: none; }
+
+/* ---------- Cases à cocher personnalisées ---------- */
+input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+input[type='checkbox']:hover { border-color: var(--brand); }
+input[type='checkbox']:checked {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+input[type='checkbox']:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.checkbox-pill input[type='checkbox'] { width: 15px; height: 15px; border-radius: 4px; }

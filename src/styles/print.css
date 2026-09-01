@@ -1,0 +1,30 @@
+@media print {
+  /* Chrome de l'application : inutile sur papier */
+  .topbar, .sidebar, .bottom-nav, .no-print {
+    display: none !important;
+  }
+
+  .app-body { display: block; }
+  .main-content { max-width: 100%; padding: 0; margin: 0; }
+
+  /* Le contenu imprimé n'a pas besoin du thème sombre ni des effets
+     d'écran — on force un rendu simple, lisible, économe en encre. */
+  html, body { background: #fff !important; color: #000 !important; }
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #999 !important;
+    border-left-width: 1px !important;
+    break-inside: avoid;
+    padding: 10px !important;
+  }
+
+  .print-only { display: block !important; }
+  .week-cell-print { display: inline !important; }
+  .week-cell-btn { display: none !important; }
+
+  .week-grid th, .week-grid td { border-color: #999; }
+  .week-grid-vehicule-row td { background: #eee !important; color: #000 !important; }
+  .week-cell-gap { background: #f2f2f2 !important; }
+
+  a[href]::after { content: none; }
+}

@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Rouge intervention — identité pompier, pas un accent SaaS générique */
+  --brand: #D62828;
+  --brand-strong: #A81F1F;
+  --brand-soft: #FBE4E4;
+
+  --green: #1E8F5F;
+  --green-soft: #DCF3E7;
+  --amber: #C67A1E;
+  --amber-soft: #FBEBD6;
+  --red: #C1272D;
+  --red-soft: #F9DADA;
+
+  /* Gris acier plutôt que blanc cassé SaaS */
+  --bg: #ECEDEF;
+  --surface: #FFFFFF;
+  --surface2: #F5F6F8;
+  --border: #D8DADE;
+  --shadow: 0 1px 2px rgba(20, 23, 28, 0.06);
+
+  --text: #14171C;
+  --text-2: #474B54;
+  --text-3: #797E88;
+
+  --sidebar-w: 216px;
+  --topbar-h: 68px;
+  --radius: 6px;
+  --radius-sm: 5px;
+  --radius-lg: 8px;
+
+  --font-ui: 'Barlow', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+:root.dark {
+  --brand: #FF6152;
+  --brand-strong: #FF8577;
+  --brand-soft: #3A1712;
+
+  --green: #38C48A;
+  --green-soft: #10291F;
+  --amber: #F0A93E;
+  --amber-soft: #2E2110;
+  --red: #F2685E;
+  --red-soft: #33120F;
+
+  --bg: #14171C;
+  --surface: #1B1F26;
+  --surface2: #20242C;
+  --border: #2C313B;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+
+  --text: #EDEEF0;
+  --text-2: #A7ACB6;
+  --text-3: #6E7480;
+}

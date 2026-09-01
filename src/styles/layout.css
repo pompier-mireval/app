@@ -1,0 +1,135 @@
+.app { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); }
+.app-body { display: flex; flex: 1; overflow: hidden; }
+
+.topbar {
+  height: var(--topbar-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  border-top: 3px solid var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-shrink: 0;
+}
+
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-logo { width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.topbar-logo img { width: 36px; height: 36px; object-fit: contain; }
+.topbar-title { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+
+.topbar-actions { display: flex; align-items: center; gap: 6px; }
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  transition: background 0.12s, color 0.12s;
+}
+.icon-btn:hover { background: var(--surface2); color: var(--text); }
+
+.user-chip { display: flex; align-items: center; gap: 6px; }
+.avatar-pill { display: flex; align-items: center; gap: 7px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px 10px 3px 3px; }
+.avatar-initials { width: 26px; height: 26px; border-radius: 50%; background: var(--brand); color: white; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); }
+.avatar-name { font-size: 12px; font-weight: 500; color: var(--text-2); display: none; }
+@media (min-width: 480px) { .avatar-name { display: block; } }
+
+.signout-btn { width: 34px; height: 34px; border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-3); }
+.signout-btn:hover { background: var(--red-soft); color: var(--red); }
+
+.sidebar { display: none; }
+@media (min-width: 768px) {
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 16px 10px;
+    gap: 1px;
+    flex-shrink: 0;
+    position: sticky;
+    top: var(--topbar-h);
+    height: calc(100vh - var(--topbar-h));
+    overflow-y: auto;
+  }
+}
+
+.sidebar-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  padding: 4px 12px 10px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border-left: 2px solid transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--surface2); }
+.nav-item.active { border-left-color: var(--brand); color: var(--brand); background: var(--brand-soft); }
+
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 6px 0;
+  position: sticky;
+  bottom: 0;
+}
+@media (min-width: 768px) { .bottom-nav { display: none; } }
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 10px;
+  color: var(--text-3);
+  font-size: 11px;
+  text-decoration: none;
+  border-top: 2px solid transparent;
+}
+.bottom-nav-item.active { color: var(--brand); border-top-color: var(--brand); }
+
+.main-content { flex: 1; padding: 20px 16px 90px; max-width: 960px; margin: 0 auto; width: 100%; }
+@media (min-width: 768px) { .main-content { padding: 24px 32px; } }
+
+/* ---------- Responsive ---------- */
+html, body { overflow-x: hidden; }
+
+@media (max-width: 560px) {
+  .main-content { padding: 14px 12px 84px; }
+  .card { padding: 13px; }
+  .page-title { font-size: 17px; }
+
+  /* Les lignes de formulaire passent en colonne et prennent toute la
+     largeur — plus lisible et plus facile à toucher qu'une rangée
+     compressée sur un petit écran. */
+  .field-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .field-row > .field,
+  .field-row > .btn-primary,
+  .field-row > .btn-secondary { width: 100%; }
+  .field-row .input { width: 100%; }
+
+  .list-row { flex-wrap: wrap; gap: 4px; }
+}
+
+/* Cibles tactiles confortables sur tout écran, pas seulement mobile */
+.checkbox-pill input { width: 16px; height: 16px; }
+.btn-primary, .btn-secondary { min-height: 36px; }
