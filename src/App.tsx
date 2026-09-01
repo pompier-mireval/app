@@ -35,14 +35,7 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route index element={<Navigate to="/dispos" replace />} />
           <Route path="/dispos" element={<DisposPage />} />
-          <Route
-            path="/planning"
-            element={
-              <ProtectedRoute minNiveau="admin">
-                <PlanningPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/planning" element={<PlanningPage />} />
           <Route
             path="/statistiques"
             element={

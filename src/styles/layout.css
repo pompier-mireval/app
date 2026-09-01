@@ -79,18 +79,24 @@
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 .nav-item:hover { background: var(--surface2); }
 .nav-item.active { border-left-color: var(--brand); color: var(--brand); background: var(--brand-soft); }
+.nav-icon { font-size: 15px; line-height: 1; flex-shrink: 0; }
 
+/* ---------- Barre de navigation mobile ---------- */
 .bottom-nav {
   display: flex;
   justify-content: space-around;
+  align-items: stretch;
   background: var(--surface);
   border-top: 1px solid var(--border);
-  padding: 6px 0;
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
   position: sticky;
   bottom: 0;
+  z-index: 90;
+  box-shadow: 0 -2px 10px rgba(20, 23, 28, 0.05);
 }
 @media (min-width: 768px) { .bottom-nav { display: none; } }
 
@@ -98,17 +104,109 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
-  padding: 6px 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 7px 4px 5px;
+  margin: 0 2px;
   color: var(--text-3);
-  font-size: 11px;
+  font-size: 10.5px;
+  font-weight: 500;
   text-decoration: none;
-  border-top: 2px solid transparent;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  position: relative;
+  transition: color 0.15s ease, background 0.15s ease;
 }
-.bottom-nav-item.active { color: var(--brand); border-top-color: var(--brand); }
+.bottom-nav-item .bnav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.bottom-nav-item .bnav-icon {
+  font-size: 19px;
+  line-height: 1;
+  transform: translateY(0);
+  transition: transform 0.15s ease;
+}
+.bottom-nav-item.active { color: var(--brand); background: var(--brand-soft); }
+.bottom-nav-item.active .bnav-icon { transform: translateY(-1px); }
+.bottom-nav-item:active .bnav-icon { transform: scale(0.9); }
+
+/* ---------- Tiroir "Plus" (mobile) ---------- */
+.more-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 16, 0.45);
+  z-index: 150;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+.more-sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+
+.more-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  padding: 10px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 24px rgba(20, 23, 28, 0.18);
+  transform: translateY(100%);
+  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.more-sheet-backdrop.open .more-sheet { transform: translateY(0); }
+
+.more-sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 4px auto 12px;
+}
+.more-sheet-title { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 10px; }
+
+.more-sheet-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.more-sheet-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  text-align: center;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.more-sheet-item.active { color: var(--brand); border-color: var(--brand); background: var(--brand-soft); }
+.more-sheet-icon { font-size: 20px; line-height: 1; }
 
 .main-content { flex: 1; padding: 20px 16px 90px; max-width: 960px; margin: 0 auto; width: 100%; }
 @media (min-width: 768px) { .main-content { padding: 24px 32px; } }
+
+.page-transition { animation: page-in 0.18s ease both; }
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-transition { animation: none; }
+}
 
 /* ---------- Responsive ---------- */
 html, body { overflow-x: hidden; }

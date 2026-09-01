@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, Fragment } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { fetchVehicules, fetchAllPostes, fetchAllPostesCompetences } from '../api/vehicules';
 import { fetchAgents } from '../api/agents';
 import { fetchAllAgentCompetences } from '../api/competences';
@@ -24,6 +25,10 @@ interface Draft {
 const EMPTY_DRAFT: Draft = { agentId: '', creneauId: '', heureDebut: '07:00', heureFin: '19:00' };
 
 export function PlanningPage() {
+  const { agent } = useAuth();
+  // Lecture ouverte à tous (dispos y compris) ; seuls admin/superadmin
+  // peuvent modifier — aligné sur ce qu'autorisent les policies RLS.
+  const canEdit = agent?.niveau_acces === 'admin' || agent?.niveau_acces === 'superadmin';
   const [viewMode, setViewMode] = useState<'jour' | 'semaine'>('semaine');
   const [date, setDate] = useState(todayIso());
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
@@ -266,7 +271,11 @@ export function PlanningPage() {
     <div className="stack">
       <PageHeader
         title="Planning"
-        sub="Clique sur une case pour affecter un agent — plusieurs agents possibles par poste, avec des horaires différents."
+        sub={
+          canEdit
+            ? 'Clique sur une case pour affecter un agent — plusieurs agents possibles par poste, avec des horaires différents.'
+            : 'Clique sur une case pour voir qui est affecté.'
+        }
       />
       <h2 className="print-only">{periodeLabel}</h2>
       {error && <ErrorBanner message={error} />}
@@ -297,7 +306,7 @@ export function PlanningPage() {
           <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 10 }}>Semaine du {weekStart} au {weekEnd}</p>
         )}
 
-        {viewMode === 'semaine' && (
+        {viewMode === 'semaine' && canEdit && (
           <div className="field-row" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
             <Field label="Garde de service cette semaine">
               <select className="input" value={gardeSemaineId} onChange={(e) => handleChangeGardeSemaine(e.target.value)}>
@@ -350,46 +359,50 @@ export function PlanningPage() {
                             <AgentLink agentId={a.agent_id}>{agentLabel(a.agent_id)}</AgentLink>{' '}
                             <span className="mono" style={{ color: 'var(--text-3)' }}>· {formatHoraire(a, creneaux)}</span>
                           </span>
-                          <button className="link-delete no-print" onClick={() => handleRemoveAffectation(a.id)}>retirer</button>
+                          {canEdit && (
+                            <button className="link-delete no-print" onClick={() => handleRemoveAffectation(a.id)}>retirer</button>
+                          )}
                         </div>
                       ))}
                       {current.length === 0 && <EmptyState>Aucun agent affecté sur ce poste pour l'instant.</EmptyState>}
                     </div>
 
-                    <div className="field-row no-print" style={{ marginTop: 8 }}>
-                      <Field label="Agent">
-                        <select className="input" value={draft.agentId} onChange={(e) => updateDraft(poste.id, { agentId: e.target.value })}>
-                          <option value="">— choisir —</option>
-                          {eligibleAgents(poste.id).map((a) => {
-                            const dispo = dispoOnDay(a.id, date);
-                            return (
-                              <option key={a.id} value={a.id}>
-                                {a.prenom} {a.nom}{dispo ? ` — dispo ${formatHoraire(dispo, creneaux)}` : ' — dispo non déclarée'}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </Field>
-                      <Field label="Créneau">
-                        <select className="input" value={draft.creneauId} onChange={(e) => updateDraft(poste.id, { creneauId: e.target.value })}>
-                          <option value="">Personnalisé</option>
-                          {creneaux.map((c) => (
-                            <option key={c.id} value={c.id}>{c.nom} ({c.heure_debut}–{c.heure_fin})</option>
-                          ))}
-                        </select>
-                      </Field>
-                      {!draft.creneauId && (
-                        <>
-                          <Field label="Début">
-                            <input type="time" className="input" value={draft.heureDebut} onChange={(e) => updateDraft(poste.id, { heureDebut: e.target.value })} />
-                          </Field>
-                          <Field label="Fin">
-                            <input type="time" className="input" value={draft.heureFin} onChange={(e) => updateDraft(poste.id, { heureFin: e.target.value })} />
-                          </Field>
-                        </>
-                      )}
-                      <Button onClick={() => handleAddAffectation(poste.id, date)}>Affecter</Button>
-                    </div>
+                    {canEdit && (
+                      <div className="field-row no-print" style={{ marginTop: 8 }}>
+                        <Field label="Agent">
+                          <select className="input" value={draft.agentId} onChange={(e) => updateDraft(poste.id, { agentId: e.target.value })}>
+                            <option value="">— choisir —</option>
+                            {eligibleAgents(poste.id).map((a) => {
+                              const dispo = dispoOnDay(a.id, date);
+                              return (
+                                <option key={a.id} value={a.id}>
+                                  {a.prenom} {a.nom}{dispo ? ` — dispo ${formatHoraire(dispo, creneaux)}` : ' — dispo non déclarée'}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </Field>
+                        <Field label="Créneau">
+                          <select className="input" value={draft.creneauId} onChange={(e) => updateDraft(poste.id, { creneauId: e.target.value })}>
+                            <option value="">Personnalisé</option>
+                            {creneaux.map((c) => (
+                              <option key={c.id} value={c.id}>{c.nom} ({c.heure_debut}–{c.heure_fin})</option>
+                            ))}
+                          </select>
+                        </Field>
+                        {!draft.creneauId && (
+                          <>
+                            <Field label="Début">
+                              <input type="time" className="input" value={draft.heureDebut} onChange={(e) => updateDraft(poste.id, { heureDebut: e.target.value })} />
+                            </Field>
+                            <Field label="Fin">
+                              <input type="time" className="input" value={draft.heureFin} onChange={(e) => updateDraft(poste.id, { heureFin: e.target.value })} />
+                            </Field>
+                          </>
+                        )}
+                        <Button onClick={() => handleAddAffectation(poste.id, date)}>Affecter</Button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -472,7 +485,9 @@ export function PlanningPage() {
                       <AgentLink agentId={a.agent_id}>{agentLabel(a.agent_id)}</AgentLink>{' '}
                       <span className="mono" style={{ color: 'var(--text-3)' }}>· {formatHoraire(a, creneaux)}</span>
                     </span>
-                    <button className="link-delete" onClick={() => handleRemoveAffectation(a.id)}>retirer</button>
+                    {canEdit && (
+                      <button className="link-delete" onClick={() => handleRemoveAffectation(a.id)}>retirer</button>
+                    )}
                   </div>
                 ))}
                 {affectationsAt(selectedCell.date, selectedCell.posteId).length === 0 && (
@@ -481,56 +496,60 @@ export function PlanningPage() {
               </div>
 
               <div className="field-row" style={{ marginTop: 10 }}>
-                <Field label="Agent">
-                  <select
-                    className="input"
-                    value={draftFor(selectedCell.posteId).agentId}
-                    onChange={(e) => updateDraft(selectedCell.posteId, { agentId: e.target.value })}
-                  >
-                    <option value="">— choisir —</option>
-                    {eligibleAgents(selectedCell.posteId).map((a) => {
-                      const dispo = dispoOnDay(a.id, selectedCell.date);
-                      return (
-                        <option key={a.id} value={a.id}>
-                          {a.prenom} {a.nom}{dispo ? ` — dispo ${formatHoraire(dispo, creneaux)}` : ' — dispo non déclarée'}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </Field>
-                <Field label="Créneau">
-                  <select
-                    className="input"
-                    value={draftFor(selectedCell.posteId).creneauId}
-                    onChange={(e) => updateDraft(selectedCell.posteId, { creneauId: e.target.value })}
-                  >
-                    <option value="">Personnalisé</option>
-                    {creneaux.map((c) => (
-                      <option key={c.id} value={c.id}>{c.nom} ({c.heure_debut}–{c.heure_fin})</option>
-                    ))}
-                  </select>
-                </Field>
-                {!draftFor(selectedCell.posteId).creneauId && (
+                {canEdit && (
                   <>
-                    <Field label="Début">
-                      <input
-                        type="time"
+                    <Field label="Agent">
+                      <select
                         className="input"
-                        value={draftFor(selectedCell.posteId).heureDebut}
-                        onChange={(e) => updateDraft(selectedCell.posteId, { heureDebut: e.target.value })}
-                      />
+                        value={draftFor(selectedCell.posteId).agentId}
+                        onChange={(e) => updateDraft(selectedCell.posteId, { agentId: e.target.value })}
+                      >
+                        <option value="">— choisir —</option>
+                        {eligibleAgents(selectedCell.posteId).map((a) => {
+                          const dispo = dispoOnDay(a.id, selectedCell.date);
+                          return (
+                            <option key={a.id} value={a.id}>
+                              {a.prenom} {a.nom}{dispo ? ` — dispo ${formatHoraire(dispo, creneaux)}` : ' — dispo non déclarée'}
+                            </option>
+                          );
+                        })}
+                      </select>
                     </Field>
-                    <Field label="Fin">
-                      <input
-                        type="time"
+                    <Field label="Créneau">
+                      <select
                         className="input"
-                        value={draftFor(selectedCell.posteId).heureFin}
-                        onChange={(e) => updateDraft(selectedCell.posteId, { heureFin: e.target.value })}
-                      />
+                        value={draftFor(selectedCell.posteId).creneauId}
+                        onChange={(e) => updateDraft(selectedCell.posteId, { creneauId: e.target.value })}
+                      >
+                        <option value="">Personnalisé</option>
+                        {creneaux.map((c) => (
+                          <option key={c.id} value={c.id}>{c.nom} ({c.heure_debut}–{c.heure_fin})</option>
+                        ))}
+                      </select>
                     </Field>
+                    {!draftFor(selectedCell.posteId).creneauId && (
+                      <>
+                        <Field label="Début">
+                          <input
+                            type="time"
+                            className="input"
+                            value={draftFor(selectedCell.posteId).heureDebut}
+                            onChange={(e) => updateDraft(selectedCell.posteId, { heureDebut: e.target.value })}
+                          />
+                        </Field>
+                        <Field label="Fin">
+                          <input
+                            type="time"
+                            className="input"
+                            value={draftFor(selectedCell.posteId).heureFin}
+                            onChange={(e) => updateDraft(selectedCell.posteId, { heureFin: e.target.value })}
+                          />
+                        </Field>
+                      </>
+                    )}
+                    <Button onClick={() => handleAddAffectation(selectedCell.posteId, selectedCell.date)}>Affecter</Button>
                   </>
                 )}
-                <Button onClick={() => handleAddAffectation(selectedCell.posteId, selectedCell.date)}>Affecter</Button>
                 <Button variant="secondary" onClick={() => setSelectedCell(null)}>Fermer</Button>
               </div>
             </Card>
