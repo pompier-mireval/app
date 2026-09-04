@@ -4,8 +4,11 @@ import { fetchCreneauxTypes, createCreneauType, updateCreneauType, deleteCreneau
 import { fetchGrades, createGrade, updateGrade, deleteGrade } from '../api/grades';
 import type { Competence, CreneauType, Grade } from '../lib/types';
 import { Card, ErrorBanner, Spinner, Button, PageHeader, Field } from '../components/ui/Primitives';
+import { useToast } from '../components/ui/Toast';
+import { confirmAction } from '../lib/confirm';
 
 export function ReferentielsPage() {
+  const { showToast } = useToast();
   const [competences, setCompetences] = useState<Competence[]>([]);
   const [creneaux, setCreneaux] = useState<CreneauType[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
@@ -57,7 +60,9 @@ export function ReferentielsPage() {
       setCode('');
       setNomCompetence('');
       load();
-    } catch {
+      showToast('Compétence créée.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de créer cette compétence (le code existe peut-être déjà).');
     }
   }
@@ -74,17 +79,22 @@ export function ReferentielsPage() {
       await updateCompetence(id, editCode.trim().toUpperCase(), editNomCompetence.trim());
       setEditingCompetence(null);
       load();
-    } catch {
+      showToast('Compétence modifiée.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de modifier cette compétence.');
     }
   }
 
   async function handleDeleteCompetence(id: string) {
+    if (!confirmAction('Supprimer cette compétence ?')) return;
     setError(null);
     try {
       await deleteCompetence(id);
       load();
-    } catch {
+      showToast('Compétence supprimée.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de supprimer cette compétence : elle est probablement utilisée par un agent ou un poste.');
     }
   }
@@ -99,7 +109,9 @@ export function ReferentielsPage() {
       await createCreneauType(nomCreneau.trim(), heureDebut, heureFin);
       setNomCreneau('');
       load();
-    } catch {
+      showToast('Créneau créé.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de créer ce créneau.');
     }
   }
@@ -117,17 +129,22 @@ export function ReferentielsPage() {
       await updateCreneauType(id, editNomCreneau.trim(), editDebut, editFin);
       setEditingCreneau(null);
       load();
-    } catch {
+      showToast('Créneau modifié.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de modifier ce créneau.');
     }
   }
 
   async function handleDeleteCreneau(id: string) {
+    if (!confirmAction('Supprimer ce créneau ?')) return;
     setError(null);
     try {
       await deleteCreneauType(id);
       load();
-    } catch {
+      showToast('Créneau supprimé.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de supprimer ce créneau : il est probablement utilisé par une disponibilité ou une affectation.');
     }
   }
@@ -143,7 +160,9 @@ export function ReferentielsPage() {
       setNomGrade('');
       setOrdreGrade(0);
       load();
-    } catch {
+      showToast('Grade créé.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de créer ce grade.');
     }
   }
@@ -160,17 +179,22 @@ export function ReferentielsPage() {
       await updateGrade(id, editNomGrade.trim(), editOrdreGrade);
       setEditingGrade(null);
       load();
-    } catch {
+      showToast('Grade modifié.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de modifier ce grade.');
     }
   }
 
   async function handleDeleteGrade(id: string) {
+    if (!confirmAction('Supprimer ce grade ?')) return;
     setError(null);
     try {
       await deleteGrade(id);
       load();
-    } catch {
+      showToast('Grade supprimé.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de supprimer ce grade : il est probablement attribué à un agent.');
     }
   }

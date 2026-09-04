@@ -16,16 +16,26 @@
   flex-shrink: 0;
 }
 
-.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .topbar-logo { width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .topbar-logo img { width: 36px; height: 36px; object-fit: contain; }
-.topbar-title { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; }
+.topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-.topbar-actions { display: flex; align-items: center; gap: 6px; }
+.topbar-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
 .icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   background: transparent;
   border-radius: var(--radius-sm);
@@ -33,6 +43,7 @@
   transition: background 0.12s, color 0.12s;
 }
 .icon-btn:hover { background: var(--surface2); color: var(--text); }
+.icon-btn:active { background: var(--surface2); }
 
 .user-chip { display: flex; align-items: center; gap: 6px; }
 .avatar-pill { display: flex; align-items: center; gap: 7px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px 10px 3px 3px; }
@@ -40,8 +51,19 @@
 .avatar-name { font-size: 12px; font-weight: 500; color: var(--text-2); display: none; }
 @media (min-width: 480px) { .avatar-name { display: block; } }
 
-.signout-btn { width: 34px; height: 34px; border: none; background: transparent; border-radius: var(--radius-sm); color: var(--text-3); }
+.signout-btn {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+}
 .signout-btn:hover { background: var(--red-soft); color: var(--red); }
+.signout-btn:active { background: var(--red-soft); color: var(--red); }
 
 .sidebar { display: none; }
 @media (min-width: 768px) {
@@ -82,8 +104,9 @@
   transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 .nav-item:hover { background: var(--surface2); }
+.nav-item:active { background: var(--surface2); }
 .nav-item.active { border-left-color: var(--brand); color: var(--brand); background: var(--brand-soft); }
-.nav-icon { font-size: 15px; line-height: 1; flex-shrink: 0; }
+.nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* ---------- Barre de navigation mobile ----------
    position: fixed plutôt que sticky : sur mobile, la hauteur de la fenêtre
@@ -134,8 +157,8 @@
   max-width: 100%;
 }
 .bottom-nav-item .bnav-icon {
-  font-size: 19px;
-  line-height: 1;
+  width: 20px;
+  height: 20px;
   transform: translateY(0);
   transition: transform 0.15s ease;
 }
@@ -201,7 +224,7 @@
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
 .more-sheet-item.active { color: var(--brand); border-color: var(--brand); background: var(--brand-soft); }
-.more-sheet-icon { font-size: 20px; line-height: 1; }
+.more-sheet-icon { width: 22px; height: 22px; }
 
 .main-content { flex: 1; padding: 20px 16px calc(96px + env(safe-area-inset-bottom, 0px)); max-width: 960px; margin: 0 auto; width: 100%; }
 @media (min-width: 768px) { .main-content { padding: 24px 32px; } }
@@ -223,6 +246,11 @@ html, body { overflow-x: hidden; }
   .card { padding: 13px; }
   .page-title { font-size: 17px; }
 
+  /* Sous 16px, Safari iOS zoome automatiquement la page à la mise au
+     point d'un champ — désagréable sur un formulaire. Tous les
+     inputs/select partagent la classe .input. */
+  .input { font-size: 16px; }
+
   /* Les lignes de formulaire passent en colonne et prennent toute la
      largeur — plus lisible et plus facile à toucher qu'une rangée
      compressée sur un petit écran. */
@@ -231,6 +259,13 @@ html, body { overflow-x: hidden; }
   .field-row > .btn-primary,
   .field-row > .btn-secondary { width: 100%; }
   .field-row .input { width: 100%; }
+  /* Plusieurs champs (Code d'une compétence, Ordre d'un grade, largeur
+     d'un input en cours d'édition...) reçoivent un max-width en style
+     inline pensé pour la mise en page desktop. Sur mobile, ce max-width
+     les rend minuscules et difficiles à toucher malgré le width:100%
+     ci-dessus (max-width prime sur width) — on le neutralise ici. */
+  .field-row .input,
+  .field-row > .field { max-width: none !important; }
 
   .list-row { flex-wrap: wrap; gap: 4px; }
 }

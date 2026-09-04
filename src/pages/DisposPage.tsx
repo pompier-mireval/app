@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { fetchDisponibilites, setDisponibilite, deleteDisponibilite } from '../api/disponibilites';
+import { fetchDisponibilites, setDisponibilite, updateDisponibilite, deleteDisponibilite } from '../api/disponibilites';
 import { fetchCreneauxTypes } from '../api/creneaux';
 import { fetchAffectationsForAgent } from '../api/affectations';
 import { fetchAllPostes, fetchVehicules } from '../api/vehicules';
@@ -8,9 +8,13 @@ import type { CreneauType, Disponibilite, Affectation, PosteVehicule, Vehicule }
 import { formatHoraire, buildPosteVehiculeLookup } from '../lib/format';
 import { todayIso, daysAgo, inDays, addDays, mondayOf, weekDaysFrom, dayLabel, dayLabelLong } from '../lib/dates';
 import { Card, ErrorBanner, Spinner, Button, PageHeader, Field, EmptyState } from '../components/ui/Primitives';
+import { useToast } from '../components/ui/Toast';
+import { confirmAction } from '../lib/confirm';
+import { IconChevronLeft, IconChevronRight } from '../components/ui/Icons';
 
 export function DisposPage() {
   const { agent } = useAuth();
+  const { showToast } = useToast();
   const [dispos, setDispos] = useState<Disponibilite[]>([]);
   const [creneaux, setCreneaux] = useState<CreneauType[]>([]);
   const [mesGardes, setMesGardes] = useState<Affectation[]>([]);
@@ -18,6 +22,8 @@ export function DisposPage() {
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [weekAnchor, setWeekAnchor] = useState(todayIso());
   const weekStart = useMemo(() => mondayOf(weekAnchor), [weekAnchor]);
@@ -78,34 +84,47 @@ export function DisposPage() {
   async function handleSave() {
     if (!agent || !selectedDay) return;
     setError(null);
+    setSaving(true);
     try {
       const existing = dispoOn(selectedDay);
-      if (existing) await deleteDisponibilite(existing.id);
-      await setDisponibilite({
-        agentId: agent.id,
-        date: selectedDay,
-        statut: 'disponible',
+      const payload = {
+        statut: 'disponible' as const,
         creneauTypeId: formCreneau || undefined,
         heureDebutPerso: formCreneau ? undefined : formDebut,
         heureFinPerso: formCreneau ? undefined : formFin,
-      });
+      };
+      if (existing) {
+        await updateDisponibilite(existing.id, payload);
+      } else {
+        await setDisponibilite({ agentId: agent.id, date: selectedDay, ...payload });
+      }
       setDispos(await fetchDisponibilites(agent.id, daysAgo(90), inDays(180)));
       setSelectedDay(null);
-    } catch {
+      showToast('Disponibilité enregistrée.');
+    } catch (err) {
+      console.error(err);
       setError("Impossible d'enregistrer cette disponibilité.");
+    } finally {
+      setSaving(false);
     }
   }
 
   async function handleDelete() {
     const existing = selectedDay ? dispoOn(selectedDay) : undefined;
     if (!agent || !existing) return;
+    if (!confirmAction('Retirer ta disponibilité pour ce jour ?')) return;
     setError(null);
+    setDeleting(true);
     try {
       await deleteDisponibilite(existing.id);
       setDispos(await fetchDisponibilites(agent.id, daysAgo(90), inDays(180)));
       setSelectedDay(null);
-    } catch {
+      showToast('Disponibilité retirée.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de supprimer cette disponibilité.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -142,10 +161,14 @@ export function DisposPage() {
       <Card>
         <div className="field-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <strong style={{ fontSize: 13 }}>Semaine du {weekStart}</strong>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <Button variant="secondary" onClick={() => setWeekAnchor(addDays(weekStart, -7))}>◀ Précédente</Button>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <Button variant="secondary" onClick={() => setWeekAnchor(addDays(weekStart, -7))}>
+              <IconChevronLeft /> Précédente
+            </Button>
             <Button variant="secondary" onClick={() => setWeekAnchor(todayIso())}>Aujourd'hui</Button>
-            <Button variant="secondary" onClick={() => setWeekAnchor(addDays(weekStart, 7))}>Suivante ▶</Button>
+            <Button variant="secondary" onClick={() => setWeekAnchor(addDays(weekStart, 7))}>
+              Suivante <IconChevronRight />
+            </Button>
           </div>
         </div>
 
@@ -189,9 +212,17 @@ export function DisposPage() {
               </div>
             )}
             <div className="field-row">
-              <Button onClick={handleSave}>Enregistrer</Button>
-              {dispoOn(selectedDay) && <Button variant="secondary" onClick={handleDelete}>Retirer ma dispo</Button>}
-              <Button variant="secondary" onClick={() => setSelectedDay(null)}>Annuler</Button>
+              <Button onClick={handleSave} disabled={saving || deleting}>
+                {saving ? 'Enregistrement…' : 'Enregistrer'}
+              </Button>
+              {dispoOn(selectedDay) && (
+                <Button variant="secondary" onClick={handleDelete} disabled={saving || deleting}>
+                  {deleting ? 'Suppression…' : 'Retirer ma dispo'}
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => setSelectedDay(null)} disabled={saving || deleting}>
+                Annuler
+              </Button>
             </div>
           </div>
         </Card>

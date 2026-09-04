@@ -34,7 +34,7 @@ export async function fetchDisponibilitesForRange(from: string, to: string): Pro
   return data as Disponibilite[];
 }
 
-interface SetDisponibiliteInput {
+export interface SetDisponibiliteInput {
   agentId: string;
   date: string;
   statut: StatutDispo;
@@ -54,6 +54,25 @@ export async function setDisponibilite(input: SetDisponibiliteInput): Promise<vo
     heure_debut_perso: input.heureDebutPerso ?? null,
     heure_fin_perso: input.heureFinPerso ?? null,
   });
+  if (error) throw error;
+}
+
+// Met à jour une dispo existante en une seule requête (plutôt qu'un
+// delete + insert) : si l'insert échoue après le delete, l'agent perdrait
+// sa dispo existante sans recours.
+export async function updateDisponibilite(
+  id: string,
+  input: Omit<SetDisponibiliteInput, 'agentId' | 'date'>
+): Promise<void> {
+  const { error } = await supabase
+    .from('disponibilites')
+    .update({
+      statut: input.statut,
+      creneau_type_id: input.creneauTypeId ?? null,
+      heure_debut_perso: input.heureDebutPerso ?? null,
+      heure_fin_perso: input.heureFinPerso ?? null,
+    })
+    .eq('id', id);
   if (error) throw error;
 }
 

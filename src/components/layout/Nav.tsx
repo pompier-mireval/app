@@ -1,29 +1,44 @@
 import { useEffect, useState } from 'react';
+import type React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import type { NiveauAcces } from '../../lib/types';
+import {
+  IconClock,
+  IconCalendar,
+  IconBarChart,
+  IconUsers,
+  IconShield,
+  IconTruck,
+  IconSettings,
+  IconShirt,
+  IconWrench,
+  IconBox,
+  IconClipboardCheck,
+  IconMenu,
+} from '../ui/Icons';
 
 interface NavItem {
   to: string;
   label: string;
-  icon: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   minNiveau: NiveauAcces;
 }
 
 const RANK: Record<NiveauAcces, number> = { utilisateur: 0, admin: 1, superadmin: 2 };
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/dispos', label: 'Mes dispos', icon: '🕒', minNiveau: 'utilisateur' },
-  { to: '/planning', label: 'Planning', icon: '📅', minNiveau: 'utilisateur' },
-  { to: '/statistiques', label: 'Statistiques', icon: '📊', minNiveau: 'admin' },
-  { to: '/agents', label: 'Agents', icon: '👥', minNiveau: 'admin' },
-  { to: '/gardes', label: 'Gardes', icon: '🚒', minNiveau: 'superadmin' },
-  { to: '/vehicules', label: 'Véhicules', icon: '🚐', minNiveau: 'superadmin' },
-  { to: '/referentiels', label: 'Référentiels', icon: '⚙️', minNiveau: 'superadmin' },
-  { to: '/habillement', label: 'Habillement', icon: '👕', minNiveau: 'utilisateur' },
-  { to: '/mecanique', label: 'Mécanique', icon: '🔧', minNiveau: 'utilisateur' },
-  { to: '/inventaire', label: 'Inventaire', icon: '📦', minNiveau: 'utilisateur' },
-  { to: '/revision', label: 'Révision', icon: '📝', minNiveau: 'utilisateur' },
+  { to: '/dispos', label: 'Mes dispos', icon: IconClock, minNiveau: 'utilisateur' },
+  { to: '/planning', label: 'Planning', icon: IconCalendar, minNiveau: 'utilisateur' },
+  { to: '/statistiques', label: 'Statistiques', icon: IconBarChart, minNiveau: 'admin' },
+  { to: '/agents', label: 'Agents', icon: IconUsers, minNiveau: 'admin' },
+  { to: '/gardes', label: 'Gardes', icon: IconShield, minNiveau: 'superadmin' },
+  { to: '/vehicules', label: 'Véhicules', icon: IconTruck, minNiveau: 'superadmin' },
+  { to: '/referentiels', label: 'Référentiels', icon: IconSettings, minNiveau: 'superadmin' },
+  { to: '/habillement', label: 'Habillement', icon: IconShirt, minNiveau: 'utilisateur' },
+  { to: '/mecanique', label: 'Mécanique', icon: IconWrench, minNiveau: 'utilisateur' },
+  { to: '/inventaire', label: 'Inventaire', icon: IconBox, minNiveau: 'utilisateur' },
+  { to: '/revision', label: 'Révision', icon: IconClipboardCheck, minNiveau: 'utilisateur' },
 ];
 
 // Le bas d'écran mobile n'a de la place que pour quelques onglets — le
@@ -43,7 +58,7 @@ export function Sidebar() {
       <div className="sidebar-section-label">Navigation</div>
       {items.map((item) => (
         <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+          <item.icon className="nav-icon" aria-hidden="true" />
           <span className="nav-label">{item.label}</span>
         </NavLink>
       ))}
@@ -69,7 +84,7 @@ export function BottomNav() {
       <nav className="bottom-nav">
         {primary.map((item) => (
           <NavLink key={item.to} to={item.to} className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-            <span className="bnav-icon" aria-hidden="true">{item.icon}</span>
+            <item.icon className="bnav-icon" aria-hidden="true" />
             <span className="bnav-label">{item.label}</span>
           </NavLink>
         ))}
@@ -80,7 +95,7 @@ export function BottomNav() {
             onClick={() => setMoreOpen(true)}
             aria-expanded={moreOpen}
           >
-            <span className="bnav-icon" aria-hidden="true">☰</span>
+            <IconMenu className="bnav-icon" aria-hidden="true" />
             <span className="bnav-label">Plus</span>
           </button>
         )}
@@ -98,7 +113,7 @@ export function BottomNav() {
                   to={item.to}
                   className={({ isActive }) => `more-sheet-item ${isActive ? 'active' : ''}`}
                 >
-                  <span className="more-sheet-icon" aria-hidden="true">{item.icon}</span>
+                  <item.icon className="more-sheet-icon" aria-hidden="true" />
                   <span>{item.label}</span>
                 </NavLink>
               ))}

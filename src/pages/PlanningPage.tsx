@@ -14,6 +14,9 @@ import { formatHoraire } from '../lib/format';
 import { todayIso, addDays, mondayOf, weekDaysFrom, dayLabel, daysAgo } from '../lib/dates';
 import { AgentLink } from '../components/ui/AgentLink';
 import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Button, Status } from '../components/ui/Primitives';
+import { useToast } from '../components/ui/Toast';
+import { confirmAction } from '../lib/confirm';
+import { IconChevronLeft, IconChevronRight } from '../components/ui/Icons';
 
 interface Draft {
   agentId: string;
@@ -26,6 +29,7 @@ const EMPTY_DRAFT: Draft = { agentId: '', creneauId: '', heureDebut: '07:00', he
 
 export function PlanningPage() {
   const { agent } = useAuth();
+  const { showToast } = useToast();
   // Lecture ouverte à tous (dispos y compris) ; seuls admin/superadmin
   // peuvent modifier — aligné sur ce qu'autorisent les policies RLS.
   const canEdit = agent?.niveau_acces === 'admin' || agent?.niveau_acces === 'superadmin';
@@ -46,6 +50,8 @@ export function PlanningPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
+  const [pendingPostes, setPendingPostes] = useState<Set<string>>(new Set());
 
   const weekStart = useMemo(() => mondayOf(date), [date]);
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
@@ -144,6 +150,7 @@ export function PlanningPage() {
       return;
     }
     setError(null);
+    setPendingPostes((prev) => new Set(prev).add(posteId));
     try {
       await createAffectation({
         agentId: draft.agentId,
@@ -155,17 +162,28 @@ export function PlanningPage() {
       });
       await refreshCurrentPeriod();
       setDrafts((prev) => ({ ...prev, [posteId]: EMPTY_DRAFT }));
-    } catch {
+      showToast('Affectation ajoutée.');
+    } catch (err) {
+      console.error(err);
       setError("Impossible d'ajouter cette affectation.");
+    } finally {
+      setPendingPostes((prev) => {
+        const next = new Set(prev);
+        next.delete(posteId);
+        return next;
+      });
     }
   }
 
   async function handleRemoveAffectation(id: string) {
+    if (!confirmAction('Retirer cette affectation ?')) return;
     setError(null);
     try {
       await deleteAffectation(id);
       setAffectations((prev) => prev.filter((a) => a.id !== id));
-    } catch {
+      showToast('Affectation retirée.');
+    } catch (err) {
+      console.error(err);
       setError("Impossible de retirer cette affectation.");
     }
   }
@@ -196,6 +214,7 @@ export function PlanningPage() {
   async function handleAutoGenerate() {
     setError(null);
     setGenerating(true);
+    setGenProgress(null);
     try {
       const historique = await fetchAffectationsForRange(daysAgo(60), weekStart);
       const charge = new Map<string, number>();
@@ -240,7 +259,8 @@ export function PlanningPage() {
         }
       }
 
-      for (const n of nouvelles) {
+      setGenProgress({ done: 0, total: nouvelles.length });
+      for (const [i, n] of nouvelles.entries()) {
         await createAffectation({
           agentId: n.agentId,
           posteVehiculeId: n.posteId,
@@ -249,16 +269,21 @@ export function PlanningPage() {
           heureDebutPerso: n.heureDebutPerso,
           heureFinPerso: n.heureFinPerso,
         });
+        setGenProgress({ done: i + 1, total: nouvelles.length });
       }
 
       await refreshCurrentPeriod();
       if (nouvelles.length === 0) {
         setError('Aucun poste vide n’a pu être comblé — vérifie les disponibilités déclarées pour cette semaine.');
+      } else {
+        showToast(`${nouvelles.length} affectation(s) générée(s).`);
       }
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("La génération automatique a échoué en cours de route. Vérifie le planning, certaines affectations ont peut-être été créées.");
     } finally {
       setGenerating(false);
+      setGenProgress(null);
     }
   }
 
@@ -292,10 +317,14 @@ export function PlanningPage() {
                 <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
               </Field>
             ) : (
-              <div style={{ display: 'flex', gap: 6 }}>
-                <Button variant="secondary" onClick={() => setDate(addDays(weekStart, -7))}>◀ Précédente</Button>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <Button variant="secondary" onClick={() => setDate(addDays(weekStart, -7))}>
+                  <IconChevronLeft /> Précédente
+                </Button>
                 <Button variant="secondary" onClick={() => setDate(todayIso())}>Aujourd'hui</Button>
-                <Button variant="secondary" onClick={() => setDate(addDays(weekStart, 7))}>Suivante ▶</Button>
+                <Button variant="secondary" onClick={() => setDate(addDays(weekStart, 7))}>
+                  Suivante <IconChevronRight />
+                </Button>
               </div>
             )}
           </div>
@@ -317,7 +346,11 @@ export function PlanningPage() {
               </select>
             </Field>
             <Button onClick={handleAutoGenerate} disabled={generating}>
-              {generating ? 'Génération…' : 'Générer automatiquement'}
+              {generating
+                ? genProgress
+                  ? `Génération… ${genProgress.done}/${genProgress.total}`
+                  : 'Génération…'
+                : 'Générer automatiquement'}
             </Button>
           </div>
         )}
@@ -400,7 +433,9 @@ export function PlanningPage() {
                             </Field>
                           </>
                         )}
-                        <Button onClick={() => handleAddAffectation(poste.id, date)}>Affecter</Button>
+                        <Button onClick={() => handleAddAffectation(poste.id, date)} disabled={pendingPostes.has(poste.id)}>
+                          {pendingPostes.has(poste.id) ? 'Affectation…' : 'Affecter'}
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -547,7 +582,12 @@ export function PlanningPage() {
                         </Field>
                       </>
                     )}
-                    <Button onClick={() => handleAddAffectation(selectedCell.posteId, selectedCell.date)}>Affecter</Button>
+                    <Button
+                      onClick={() => handleAddAffectation(selectedCell.posteId, selectedCell.date)}
+                      disabled={pendingPostes.has(selectedCell.posteId)}
+                    >
+                      {pendingPostes.has(selectedCell.posteId) ? 'Affectation…' : 'Affecter'}
+                    </Button>
                   </>
                 )}
                 <Button variant="secondary" onClick={() => setSelectedCell(null)}>Fermer</Button>

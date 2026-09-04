@@ -41,8 +41,10 @@ reste.
 
 - **La clé anon Supabase n'est pas un secret.** Elle est faite pour être
   exposée côté client ; la vraie protection vient des *policies RLS* définies
-  en base (voir `schema.sql`). Ne mets jamais la `service_role` key dans ce
-  projet front-end.
+  en base (voir `schema.sql`, `schema_v2.sql` et **`security_rls.sql`** — ce
+  dernier active RLS sur toutes les tables et doit être exécuté dans le SQL
+  Editor Supabase avant toute mise en production). Ne mets jamais la
+  `service_role` key dans ce projet front-end.
 - **`.env` est ignoré par git** (`.gitignore`). Ne commit jamais de fichier
   `.env` rempli.
 - **`ProtectedRoute` n'est qu'un confort d'UX.** Elle évite d'afficher un

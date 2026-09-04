@@ -20,6 +20,13 @@
 .card-accent-red { border-left-color: var(--red); }
 
 /* ---------- Boutons ---------- */
+.btn-primary, .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 .btn-primary {
   background: var(--brand);
   color: white;
@@ -31,6 +38,7 @@
   transition: background 0.12s ease;
 }
 .btn-primary:hover { background: var(--brand-strong); }
+.btn-primary:active:not(:disabled) { background: var(--brand-strong); transform: scale(0.98); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-secondary {
@@ -44,6 +52,8 @@
   transition: background 0.12s ease;
 }
 .btn-secondary:hover { background: var(--border); }
+.btn-secondary:active:not(:disabled) { background: var(--border); transform: scale(0.98); }
+.btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ---------- Champs de formulaire ---------- */
 .field { display: flex; flex-direction: column; gap: 5px; }
@@ -60,6 +70,17 @@
   min-width: 0;
 }
 .input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+.input-search-wrap { position: relative; }
+.input-search-wrap .input { padding-left: 34px; width: 100%; }
+.input-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  pointer-events: none;
+}
 
 .checkbox-pill {
   display: inline-flex;
@@ -297,3 +318,29 @@ input[type='checkbox']:checked::after {
 }
 input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .checkbox-pill input[type='checkbox'] { width: 15px; height: 15px; border-radius: 4px; }
+
+/* ---------- Notifications ponctuelles (confirmation d'action) ---------- */
+.toast-stack {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+  max-width: min(320px, calc(100vw - 32px));
+}
+.toast {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  animation: toast-in 0.15s ease;
+}
+.toast-success { background: var(--green-soft); color: var(--green); border-left: 3px solid var(--green); }
+.toast-error { background: var(--red-soft); color: var(--red); border-left: 3px solid var(--red); }
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}

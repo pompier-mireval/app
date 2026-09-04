@@ -12,6 +12,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Le flash bleu par défaut au tap sur mobile jure avec le thème — on le
+   retire partout et on redonne un vrai retour tactile via :active
+   ciblé sur les éléments interactifs (boutons, nav, cases à cocher). */
+button, a, input, select, label {
+  -webkit-tap-highlight-color: transparent;
+}
+
 button { font-family: inherit; cursor: pointer; }
 select, input { font-family: inherit; }
 

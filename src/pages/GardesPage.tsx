@@ -13,8 +13,11 @@ import type { Garde, Agent } from '../lib/types';
 import type { AgentGardeLink } from '../api/gardes';
 import { Card, ErrorBanner, Spinner, Button, PageHeader, Field, EmptyState } from '../components/ui/Primitives';
 import { AgentLink } from '../components/ui/AgentLink';
+import { useToast } from '../components/ui/Toast';
+import { confirmAction } from '../lib/confirm';
 
 export function GardesPage() {
+  const { showToast } = useToast();
   const [gardes, setGardes] = useState<Garde[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [memberships, setMemberships] = useState<AgentGardeLink[]>([]);
@@ -48,7 +51,9 @@ export function GardesPage() {
       await createGarde(nomGarde.trim());
       setNomGarde('');
       load();
-    } catch {
+      showToast('Garde créée.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de créer cette garde.');
     }
   }
@@ -59,17 +64,22 @@ export function GardesPage() {
       await updateGarde(id, editNom.trim());
       setEditing(null);
       load();
-    } catch {
+      showToast('Garde renommée.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de renommer cette garde.');
     }
   }
 
   async function handleDeleteGarde(id: string) {
+    if (!confirmAction('Supprimer cette garde ?')) return;
     setError(null);
     try {
       await deleteGarde(id);
       load();
-    } catch {
+      showToast('Garde supprimée.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de supprimer cette garde.');
     }
   }
@@ -80,7 +90,8 @@ export function GardesPage() {
       if (isMember) await removeAgentFromGarde(agentId, gardeId);
       else await assignAgentToGarde(agentId, gardeId);
       load();
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError("Impossible de mettre à jour l'appartenance à la garde.");
     }
   }

@@ -16,8 +16,11 @@ import { fetchCompetences } from '../api/competences';
 import type { Vehicule, PosteVehicule, Competence } from '../lib/types';
 import type { PosteCompetenceLink } from '../api/vehicules';
 import { Card, ErrorBanner, Spinner, Button, PageHeader, Field, EmptyState } from '../components/ui/Primitives';
+import { useToast } from '../components/ui/Toast';
+import { confirmAction } from '../lib/confirm';
 
 export function VehiculesPage() {
+  const { showToast } = useToast();
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [competences, setCompetences] = useState<Competence[]>([]);
   const [postesByVehicule, setPostesByVehicule] = useState<Record<string, PosteVehicule[]>>({});
@@ -36,7 +39,8 @@ export function VehiculesPage() {
       setPostesCompetences(pc);
       const entries = await Promise.all(v.map(async (veh) => [veh.id, await fetchPostesForVehicule(veh.id)] as const));
       setPostesByVehicule(Object.fromEntries(entries));
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError('Impossible de charger les véhicules.');
     } finally {
       setLoading(false);
@@ -58,7 +62,9 @@ export function VehiculesPage() {
       setNom('');
       setType('');
       load();
-    } catch {
+      showToast('Véhicule créé.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de créer ce véhicule.');
     }
   }
@@ -107,6 +113,7 @@ interface VehiculeCardProps {
 }
 
 function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChanged, onError }: VehiculeCardProps) {
+  const { showToast } = useToast();
   const [nomPoste, setNomPoste] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const [editingVehicule, setEditingVehicule] = useState(false);
@@ -129,7 +136,9 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
       setNomPoste('');
       setSelected([]);
       onChanged();
-    } catch {
+      showToast('Poste ajouté.');
+    } catch (err) {
+      console.error(err);
       onError('Impossible de créer ce poste.');
     }
   }
@@ -144,16 +153,21 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
       });
       setEditingVehicule(false);
       onChanged();
-    } catch {
+      showToast('Véhicule modifié.');
+    } catch (err) {
+      console.error(err);
       onError('Impossible de modifier ce véhicule.');
     }
   }
 
   async function handleDeleteVehicule() {
+    if (!confirmAction(`Supprimer le véhicule "${vehicule.nom}" et tous ses postes ?`)) return;
     try {
       await deleteVehicule(vehicule.id);
       onChanged();
-    } catch {
+      showToast('Véhicule supprimé.');
+    } catch (err) {
+      console.error(err);
       onError('Impossible de supprimer ce véhicule.');
     }
   }
@@ -163,16 +177,21 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
       await updatePosteNom(posteId, editPosteNom.trim());
       setEditingPoste(null);
       onChanged();
-    } catch {
+      showToast('Poste renommé.');
+    } catch (err) {
+      console.error(err);
       onError('Impossible de renommer ce poste.');
     }
   }
 
   async function handleDeletePoste(posteId: string) {
+    if (!confirmAction('Supprimer ce poste ?')) return;
     try {
       await deletePoste(posteId);
       onChanged();
-    } catch {
+      showToast('Poste supprimé.');
+    } catch (err) {
+      console.error(err);
       onError('Impossible de supprimer ce poste.');
     }
   }
@@ -182,7 +201,8 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
       if (hasIt) await removePosteCompetence(posteId, competenceId);
       else await addPosteCompetence(posteId, competenceId);
       onChanged();
-    } catch {
+    } catch (err) {
+      console.error(err);
       onError('Impossible de mettre à jour les compétences de ce poste.');
     }
   }

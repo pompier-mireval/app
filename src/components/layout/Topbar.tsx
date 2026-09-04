@@ -1,5 +1,6 @@
 import { useAuth } from '../../hooks/useAuth';
 import { Link } from 'react-router-dom';
+import { IconSun, IconMoon, IconPower } from '../ui/Icons';
 
 interface Props {
   darkMode: boolean;
@@ -22,16 +23,21 @@ export function Topbar({ darkMode, onToggleDark }: Props) {
         <span className="topbar-title">Planning caserne</span>
       </div>
       <div className="topbar-actions">
-        <button className="icon-btn" onClick={onToggleDark} title={darkMode ? 'Mode clair' : 'Mode sombre'}>
-          {darkMode ? '☀' : '☾'}
+        <button
+          className="icon-btn"
+          onClick={onToggleDark}
+          title={darkMode ? 'Mode clair' : 'Mode sombre'}
+          aria-label={darkMode ? 'Passer en mode clair' : 'Passer en mode sombre'}
+        >
+          {darkMode ? <IconSun /> : <IconMoon />}
         </button>
         <div className="user-chip">
           <Link to="/profil" className="avatar-pill" style={{ textDecoration: 'none' }}>
             <span className="avatar-initials">{initials}</span>
             <span className="avatar-name">{fullName || agent?.email}</span>
           </Link>
-          <button className="signout-btn" onClick={signOut} title="Se déconnecter">
-            ⏻
+          <button className="signout-btn" onClick={signOut} title="Se déconnecter" aria-label="Se déconnecter">
+            <IconPower />
           </button>
         </div>
       </div>

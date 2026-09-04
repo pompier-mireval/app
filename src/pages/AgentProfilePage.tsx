@@ -7,6 +7,7 @@ import { fetchGrades } from '../api/grades';
 import { fetchGardesForAgent } from '../api/gardes';
 import type { Agent, Competence, Grade, Garde } from '../lib/types';
 import { Card, ErrorBanner, SuccessBanner, Spinner, Button, PageHeader, Field, Badge, EmptyState } from '../components/ui/Primitives';
+import { useToast } from '../components/ui/Toast';
 
 interface Props {
   own?: boolean;
@@ -14,6 +15,7 @@ interface Props {
 
 export function AgentProfilePage({ own = false }: Props) {
   const { agent: moi, updatePassword } = useAuth();
+  const { showToast } = useToast();
   const params = useParams<{ id: string }>();
   const targetId = own ? moi?.id : params.id;
 
@@ -51,7 +53,10 @@ export function AgentProfilePage({ own = false }: Props) {
         setGardes(gd);
         setTelephone(a?.telephone ?? '');
       })
-      .catch(() => setError('Impossible de charger cette fiche.'))
+      .catch((err) => {
+        console.error(err);
+        setError('Impossible de charger cette fiche.');
+      })
       .finally(() => setLoading(false));
   }, [targetId]);
 
@@ -62,7 +67,9 @@ export function AgentProfilePage({ own = false }: Props) {
       await updateAgentTelephone(target.id, telephone.trim());
       setTarget({ ...target, telephone: telephone.trim() });
       setEditingTelephone(false);
-    } catch {
+      showToast('Numéro enregistré.');
+    } catch (err) {
+      console.error(err);
       setError("Impossible d'enregistrer ce numéro.");
     }
   }
@@ -83,7 +90,8 @@ export function AgentProfilePage({ own = false }: Props) {
       setNewPassword('');
       setConfirmPassword('');
       setSuccess('Mot de passe mis à jour.');
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError('Impossible de changer le mot de passe.');
     }
   }

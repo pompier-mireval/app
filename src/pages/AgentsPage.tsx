@@ -9,11 +9,16 @@ import { scopeAgentsToMyGardes } from '../lib/scope';
 import { useAuth } from '../hooks/useAuth';
 import { AgentLink } from '../components/ui/AgentLink';
 import { Card, ErrorBanner, Spinner, Badge, PageHeader, EmptyState, Button } from '../components/ui/Primitives';
+import { useToast } from '../components/ui/Toast';
+import { confirmAction } from '../lib/confirm';
+import { IconSearch } from '../components/ui/Icons';
 
 const NIVEAUX: NiveauAcces[] = ['utilisateur', 'admin', 'superadmin'];
 
 export function AgentsPage() {
   const { agent: moi } = useAuth();
+  const { showToast } = useToast();
+  const [search, setSearch] = useState('');
   const [agents, setAgents] = useState<Agent[]>([]);
   const [agentGardes, setAgentGardes] = useState<AgentGardeLink[]>([]);
   const [competences, setCompetences] = useState<Competence[]>([]);
@@ -46,13 +51,20 @@ export function AgentsPage() {
     [agents, agentGardes, moi]
   );
 
+  const filteredAgents = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return visibleAgents;
+    return visibleAgents.filter((a) => `${a.prenom} ${a.nom} ${a.email}`.toLowerCase().includes(q));
+  }, [visibleAgents, search]);
+
   async function handleToggleCompetence(agentId: string, competenceId: string, hasIt: boolean) {
     setError(null);
     try {
       if (hasIt) await revokeCompetence(agentId, competenceId);
       else await grantCompetence(agentId, competenceId);
       load();
-    } catch {
+    } catch (err) {
+      console.error(err);
       setError('Impossible de mettre à jour cette compétence. Vérifie que ton compte est admin ou superadmin.');
     }
   }
@@ -69,17 +81,22 @@ export function AgentsPage() {
       await updateAgentIdentity(agentId, { nom: editNom.trim(), prenom: editPrenom.trim() });
       setEditing(null);
       load();
-    } catch {
+      showToast('Fiche mise à jour.');
+    } catch (err) {
+      console.error(err);
       setError("Impossible d'enregistrer ces informations.");
     }
   }
 
   async function handleToggleActif(agent: Agent) {
+    if (agent.actif && !confirmAction(`Désactiver ${agent.prenom} ${agent.nom} ?`)) return;
     setError(null);
     try {
       await setAgentActif(agent.id, !agent.actif);
       load();
-    } catch {
+      showToast(agent.actif ? 'Agent désactivé.' : 'Agent réactivé.');
+    } catch (err) {
+      console.error(err);
       setError("Impossible de changer l'état actif de cet agent.");
     }
   }
@@ -89,7 +106,9 @@ export function AgentsPage() {
     try {
       await updateNiveauAcces(agentId, niveau);
       load();
-    } catch {
+      showToast("Niveau d'accès modifié.");
+    } catch (err) {
+      console.error(err);
       setError("Impossible de changer le niveau d'accès (réservé au superadmin).");
     }
   }
@@ -99,7 +118,9 @@ export function AgentsPage() {
     try {
       await updateAgentGrade(agentId, gradeId || null);
       load();
-    } catch {
+      showToast('Grade modifié.');
+    } catch (err) {
+      console.error(err);
       setError('Impossible de changer le grade (réservé admin/superadmin).');
     }
   }
@@ -120,8 +141,18 @@ export function AgentsPage() {
       />
       {error && <ErrorBanner message={error} />}
 
+      <div className="input-search-wrap">
+        <IconSearch className="input-search-icon" />
+        <input
+          className="input"
+          placeholder="Rechercher un agent (nom, prénom, email)…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
       <div className="stack-sm">
-        {visibleAgents.map((agent) => (
+        {filteredAgents.map((agent) => (
           <Card key={agent.id} className={agent.actif ? '' : 'agent-inactif'}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ flex: 1, minWidth: 200 }}>
@@ -187,7 +218,9 @@ export function AgentsPage() {
             </div>
           </Card>
         ))}
-        {visibleAgents.length === 0 && <EmptyState>Aucun agent enregistré.</EmptyState>}
+        {filteredAgents.length === 0 && (
+          <EmptyState>{search.trim() ? 'Aucun agent ne correspond à cette recherche.' : 'Aucun agent enregistré.'}</EmptyState>
+        )}
       </div>
     </div>
   );
