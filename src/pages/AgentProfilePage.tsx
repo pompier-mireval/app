@@ -35,7 +35,10 @@ export function AgentProfilePage({ own = false }: Props) {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   useEffect(() => {
-    if (!targetId) return;
+    if (!targetId) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     Promise.all([
@@ -97,6 +100,11 @@ export function AgentProfilePage({ own = false }: Props) {
   }
 
   if (loading) return <Spinner />;
+  if (!targetId) {
+    return (
+      <ErrorBanner message="Ton compte n'est pas encore relié à une fiche agent. Contacte un administrateur pour qu'il vérifie ta fiche dans Supabase." />
+    );
+  }
   if (!target) return <ErrorBanner message="Agent introuvable." />;
 
   const gradeNom = grades.find((g) => g.id === target.grade_id)?.nom;

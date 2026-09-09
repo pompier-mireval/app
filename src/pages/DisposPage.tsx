@@ -35,7 +35,10 @@ export function DisposPage() {
   const [formFin, setFormFin] = useState('19:00');
 
   function load() {
-    if (!agent) return;
+    if (!agent) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     Promise.all([
       fetchDisponibilites(agent.id, daysAgo(90), inDays(180)),
@@ -129,6 +132,15 @@ export function DisposPage() {
   }
 
   if (loading) return <Spinner />;
+
+  if (!agent) {
+    return (
+      <div className="stack">
+        <PageHeader title="Mes disponibilités" />
+        <ErrorBanner message="Ton compte n'est pas encore relié à une fiche agent. Contacte un administrateur pour qu'il vérifie ta fiche dans Supabase." />
+      </div>
+    );
+  }
 
   return (
     <div className="stack">
