@@ -49,7 +49,7 @@ export function AuthScreen() {
       <div className="auth-bg-grid" />
       <div className="auth-card">
         <div className="auth-emblem">
-          <img src="/logo.jpg" alt="Logo caserne" />
+          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Logo caserne" />
         </div>
         <h1 className="auth-title">Planning caserne</h1>
         <p className="auth-sub">Connecte-toi pour accéder au planning.</p>

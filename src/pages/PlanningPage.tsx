@@ -405,14 +405,14 @@ export function PlanningPage() {
                         <Field label="Agent">
                           <select className="input" value={draft.agentId} onChange={(e) => updateDraft(poste.id, { agentId: e.target.value })}>
                             <option value="">— choisir —</option>
-                            {eligibleAgents(poste.id).map((a) => {
-                              const dispo = dispoOnDay(a.id, date);
-                              return (
+                            {eligibleAgents(poste.id)
+                              .map((a) => ({ a, dispo: dispoOnDay(a.id, date) }))
+                              .filter(({ dispo }) => dispo)
+                              .map(({ a, dispo }) => (
                                 <option key={a.id} value={a.id}>
-                                  {a.prenom} {a.nom}{dispo ? ` — dispo ${formatHoraire(dispo, creneaux)}` : ' — dispo non déclarée'}
+                                  {a.prenom} {a.nom} — dispo {formatHoraire(dispo!, creneaux)}
                                 </option>
-                              );
-                            })}
+                              ))}
                           </select>
                         </Field>
                         <Field label="Créneau">
@@ -540,14 +540,14 @@ export function PlanningPage() {
                         onChange={(e) => updateDraft(selectedCell.posteId, { agentId: e.target.value })}
                       >
                         <option value="">— choisir —</option>
-                        {eligibleAgents(selectedCell.posteId).map((a) => {
-                          const dispo = dispoOnDay(a.id, selectedCell.date);
-                          return (
+                        {eligibleAgents(selectedCell.posteId)
+                          .map((a) => ({ a, dispo: dispoOnDay(a.id, selectedCell.date) }))
+                          .filter(({ dispo }) => dispo)
+                          .map(({ a, dispo }) => (
                             <option key={a.id} value={a.id}>
-                              {a.prenom} {a.nom}{dispo ? ` — dispo ${formatHoraire(dispo, creneaux)}` : ' — dispo non déclarée'}
+                              {a.prenom} {a.nom} — dispo {formatHoraire(dispo!, creneaux)}
                             </option>
-                          );
-                        })}
+                          ))}
                       </select>
                     </Field>
                     <Field label="Créneau">
