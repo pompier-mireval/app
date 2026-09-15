@@ -13,7 +13,7 @@ import type { PosteCompetenceLink } from '../api/vehicules';
 import { formatHoraire } from '../lib/format';
 import { todayIso, addDays, mondayOf, weekDaysFrom, dayLabel, daysAgo } from '../lib/dates';
 import { AgentLink } from '../components/ui/AgentLink';
-import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Button, Status } from '../components/ui/Primitives';
+import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Button, Status, Modal } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
 import { IconChevronLeft, IconChevronRight } from '../components/ui/Icons';
@@ -123,6 +123,24 @@ export function PlanningPage() {
     return affectations.filter((a) => a.date === day && a.poste_vehicule_id === posteId);
   }
 
+  function vehiculeIdForPoste(posteId: string): string | undefined {
+    return postes.find((p) => p.id === posteId)?.vehicule_id;
+  }
+
+  // Un agent peut être affecté le même jour sur plusieurs véhicules, mais
+  // une seule fois par véhicule (pas sur deux postes du même engin en même
+  // temps). `excludePosteId` sert à ne pas se bloquer soi-même quand on
+  // ajoute un deuxième agent sur le poste qu'on est en train de remplir.
+  function agentsAlreadyOnVehicule(day: string, vehiculeId: string | undefined, excludePosteId?: string): Set<string> {
+    if (!vehiculeId) return new Set();
+    const posteIds = new Set((postesByVehicule[vehiculeId] ?? []).map((p) => p.id));
+    return new Set(
+      affectations
+        .filter((a) => a.date === day && a.poste_vehicule_id !== excludePosteId && posteIds.has(a.poste_vehicule_id))
+        .map((a) => a.agent_id)
+    );
+  }
+
   function dispoOnDay(agentId: string, day: string): Disponibilite | undefined {
     return dispos.find((d) => d.agent_id === agentId && d.date === day);
   }
@@ -147,6 +165,10 @@ export function PlanningPage() {
     const draft = draftFor(posteId);
     if (!draft.agentId) {
       setError('Sélectionne un agent avant d’affecter.');
+      return;
+    }
+    if (agentsAlreadyOnVehicule(day, vehiculeIdForPoste(posteId), posteId).has(draft.agentId)) {
+      setError('Cet agent est déjà affecté sur un autre poste de ce véhicule ce jour-là.');
       return;
     }
     setError(null);
@@ -229,6 +251,14 @@ export function PlanningPage() {
         for (const nouv of nouvelles.filter((n) => n.date === day)) dejaAffectesCeJour.add(nouv.agentId);
 
         for (const vehicule of vehicules) {
+          // Un agent ne peut être qu'une seule fois sur un même engin le
+          // même jour (deux postes différents du même véhicule) — c'est un
+          // vrai blocage, contrairement à la préférence entre véhicules.
+          const dejaSurCetEnginCeJour = agentsAlreadyOnVehicule(day, vehicule.id);
+          for (const nouv of nouvelles.filter((n) => n.date === day && (postesByVehicule[vehicule.id] ?? []).some((p) => p.id === n.posteId))) {
+            dejaSurCetEnginCeJour.add(nouv.agentId);
+          }
+
           for (const poste of postesByVehicule[vehicule.id] ?? []) {
             const dejaSurCePoste = [
               ...affectationsAt(day, poste.id),
@@ -236,11 +266,22 @@ export function PlanningPage() {
             ];
             if (dejaSurCePoste.length > 0) continue; // ne pas écraser l'existant
 
-            const candidats = eligibleAgents(poste.id)
-              .filter((a) => !dejaAffectesCeJour.has(a.id))
-              .map((a) => ({ agent: a, dispo: dispoSemaine.find((d) => d.agent_id === a.id && d.date === day) }))
-              .filter((c) => c.dispo)
-              .sort((a, b) => (charge.get(a.agent.id) ?? 0) - (charge.get(b.agent.id) ?? 0));
+            const buildCandidats = (excludeDejaAffectes: boolean) =>
+              eligibleAgents(poste.id)
+                .filter((a) => !dejaSurCetEnginCeJour.has(a.id))
+                .filter((a) => !excludeDejaAffectes || !dejaAffectesCeJour.has(a.id))
+                .map((a) => ({ agent: a, dispo: dispoSemaine.find((d) => d.agent_id === a.id && d.date === day) }))
+                .filter((c) => c.dispo)
+                .sort((a, b) => (charge.get(a.agent.id) ?? 0) - (charge.get(b.agent.id) ?? 0));
+
+            // On évite d'abord les agents déjà affectés ce jour-là sur un
+            // autre engin, mais ce n'est qu'une préférence : si personne
+            // d'autre n'est éligible/disponible, on autorise un agent déjà
+            // sur un autre véhicule plutôt que de laisser le poste vide
+            // (non bloquant). En revanche dejaSurCetEnginCeJour reste un
+            // filtre dur dans les deux cas : jamais deux fois sur le même engin.
+            let candidats = buildCandidats(true);
+            if (candidats.length === 0) candidats = buildCandidats(false);
 
             if (candidats.length === 0) continue; // trou assumé : personne d'éligible/disponible
 
@@ -254,6 +295,7 @@ export function PlanningPage() {
               heureFinPerso: choix.dispo?.creneau_type_id ? undefined : choix.dispo?.heure_fin_perso ?? undefined,
             });
             dejaAffectesCeJour.add(choix.agent.id);
+            dejaSurCetEnginCeJour.add(choix.agent.id);
             charge.set(choix.agent.id, (charge.get(choix.agent.id) ?? 0) + 1);
           }
         }
@@ -380,7 +422,6 @@ export function PlanningPage() {
             <div className="stack" style={{ marginTop: 10 }}>
               {(postesByVehicule[v.id] ?? []).map((poste) => {
                 const current = affectationsAt(date, poste.id);
-                const draft = draftFor(poste.id);
                 return (
                   <div key={poste.id} style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
                     <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{poste.nom_poste}</div>
@@ -401,40 +442,9 @@ export function PlanningPage() {
                     </div>
 
                     {canEdit && (
-                      <div className="field-row no-print" style={{ marginTop: 8 }}>
-                        <Field label="Agent">
-                          <select className="input" value={draft.agentId} onChange={(e) => updateDraft(poste.id, { agentId: e.target.value })}>
-                            <option value="">— choisir —</option>
-                            {eligibleAgents(poste.id)
-                              .map((a) => ({ a, dispo: dispoOnDay(a.id, date) }))
-                              .filter(({ dispo }) => dispo)
-                              .map(({ a, dispo }) => (
-                                <option key={a.id} value={a.id}>
-                                  {a.prenom} {a.nom} — dispo {formatHoraire(dispo!, creneaux)}
-                                </option>
-                              ))}
-                          </select>
-                        </Field>
-                        <Field label="Créneau">
-                          <select className="input" value={draft.creneauId} onChange={(e) => updateDraft(poste.id, { creneauId: e.target.value })}>
-                            <option value="">Personnalisé</option>
-                            {creneaux.map((c) => (
-                              <option key={c.id} value={c.id}>{c.nom} ({c.heure_debut}–{c.heure_fin})</option>
-                            ))}
-                          </select>
-                        </Field>
-                        {!draft.creneauId && (
-                          <>
-                            <Field label="Début">
-                              <input type="time" className="input" value={draft.heureDebut} onChange={(e) => updateDraft(poste.id, { heureDebut: e.target.value })} />
-                            </Field>
-                            <Field label="Fin">
-                              <input type="time" className="input" value={draft.heureFin} onChange={(e) => updateDraft(poste.id, { heureFin: e.target.value })} />
-                            </Field>
-                          </>
-                        )}
-                        <Button onClick={() => handleAddAffectation(poste.id, date)} disabled={pendingPostes.has(poste.id)}>
-                          {pendingPostes.has(poste.id) ? 'Affectation…' : 'Affecter'}
+                      <div className="no-print" style={{ marginTop: 8 }}>
+                        <Button variant="secondary" onClick={() => setSelectedCell({ posteId: poste.id, date })}>
+                          Affecter un agent
                         </Button>
                       </div>
                     )}
@@ -483,7 +493,7 @@ export function PlanningPage() {
                               <td key={d} className={`${covered ? 'week-cell-covered' : 'week-cell-gap'} ${isSelected ? 'week-cell-selected' : ''}`}>
                                 <button
                                   className="week-cell-btn no-print"
-                                  onClick={() => setSelectedCell(isSelected ? null : { posteId: poste.id, date: d })}
+                                  onClick={() => setSelectedCell({ posteId: poste.id, date: d })}
                                 >
                                   {covered ? dayAffs.map((a) => agentShortLabel(a.agent_id)).join(', ') : '—'}
                                 </button>
@@ -507,94 +517,95 @@ export function PlanningPage() {
             </div>
           </Card>
 
-          {selectedCell && (
-            <Card accent="brand" className="no-print">
-              <strong style={{ fontSize: 13 }}>
-                {postes.find((p) => p.id === selectedCell.posteId)?.nom_poste} — {dayLabel(selectedCell.date)}
-              </strong>
+        </>
+      )}
 
-              <div className="stack-sm" style={{ marginTop: 10 }}>
-                {affectationsAt(selectedCell.date, selectedCell.posteId).map((a) => (
-                  <div key={a.id} className="list-row">
-                    <span>
-                      <AgentLink agentId={a.agent_id}>{agentLabel(a.agent_id)}</AgentLink>{' '}
-                      <span className="mono" style={{ color: 'var(--text-3)' }}>· {formatHoraire(a, creneaux)}</span>
-                    </span>
-                    {canEdit && (
-                      <button className="link-delete" onClick={() => handleRemoveAffectation(a.id)}>retirer</button>
-                    )}
-                  </div>
-                ))}
-                {affectationsAt(selectedCell.date, selectedCell.posteId).length === 0 && (
-                  <EmptyState>Aucun agent affecté sur ce poste pour l'instant.</EmptyState>
+      {selectedCell && (
+        <Modal
+          title={`${postes.find((p) => p.id === selectedCell.posteId)?.nom_poste ?? ''} — ${dayLabel(selectedCell.date)}`}
+          onClose={() => setSelectedCell(null)}
+        >
+          <div className="stack-sm">
+            {affectationsAt(selectedCell.date, selectedCell.posteId).map((a) => (
+              <div key={a.id} className="list-row">
+                <span>
+                  <AgentLink agentId={a.agent_id}>{agentLabel(a.agent_id)}</AgentLink>{' '}
+                  <span className="mono" style={{ color: 'var(--text-3)' }}>· {formatHoraire(a, creneaux)}</span>
+                </span>
+                {canEdit && (
+                  <button className="link-delete" onClick={() => handleRemoveAffectation(a.id)}>retirer</button>
                 )}
               </div>
+            ))}
+            {affectationsAt(selectedCell.date, selectedCell.posteId).length === 0 && (
+              <EmptyState>Aucun agent affecté sur ce poste pour l'instant.</EmptyState>
+            )}
+          </div>
 
-              <div className="field-row" style={{ marginTop: 10 }}>
-                {canEdit && (
-                  <>
-                    <Field label="Agent">
-                      <select
-                        className="input"
-                        value={draftFor(selectedCell.posteId).agentId}
-                        onChange={(e) => updateDraft(selectedCell.posteId, { agentId: e.target.value })}
-                      >
-                        <option value="">— choisir —</option>
-                        {eligibleAgents(selectedCell.posteId)
-                          .map((a) => ({ a, dispo: dispoOnDay(a.id, selectedCell.date) }))
-                          .filter(({ dispo }) => dispo)
-                          .map(({ a, dispo }) => (
-                            <option key={a.id} value={a.id}>
-                              {a.prenom} {a.nom} — dispo {formatHoraire(dispo!, creneaux)}
-                            </option>
-                          ))}
-                      </select>
-                    </Field>
-                    <Field label="Créneau">
-                      <select
-                        className="input"
-                        value={draftFor(selectedCell.posteId).creneauId}
-                        onChange={(e) => updateDraft(selectedCell.posteId, { creneauId: e.target.value })}
-                      >
-                        <option value="">Personnalisé</option>
-                        {creneaux.map((c) => (
-                          <option key={c.id} value={c.id}>{c.nom} ({c.heure_debut}–{c.heure_fin})</option>
-                        ))}
-                      </select>
-                    </Field>
-                    {!draftFor(selectedCell.posteId).creneauId && (
-                      <>
-                        <Field label="Début">
-                          <input
-                            type="time"
-                            className="input"
-                            value={draftFor(selectedCell.posteId).heureDebut}
-                            onChange={(e) => updateDraft(selectedCell.posteId, { heureDebut: e.target.value })}
-                          />
-                        </Field>
-                        <Field label="Fin">
-                          <input
-                            type="time"
-                            className="input"
-                            value={draftFor(selectedCell.posteId).heureFin}
-                            onChange={(e) => updateDraft(selectedCell.posteId, { heureFin: e.target.value })}
-                          />
-                        </Field>
-                      </>
-                    )}
-                    <Button
-                      onClick={() => handleAddAffectation(selectedCell.posteId, selectedCell.date)}
-                      disabled={pendingPostes.has(selectedCell.posteId)}
-                    >
-                      {pendingPostes.has(selectedCell.posteId) ? 'Affectation…' : 'Affecter'}
-                    </Button>
-                  </>
-                )}
+          {canEdit && (
+            <div className="stack-sm" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+              <Field label="Agent">
+                <select
+                  className="input"
+                  value={draftFor(selectedCell.posteId).agentId}
+                  onChange={(e) => updateDraft(selectedCell.posteId, { agentId: e.target.value })}
+                >
+                  <option value="">— choisir —</option>
+                  {eligibleAgents(selectedCell.posteId)
+                    .filter((a) => !agentsAlreadyOnVehicule(selectedCell.date, vehiculeIdForPoste(selectedCell.posteId), selectedCell.posteId).has(a.id))
+                    .map((a) => ({ a, dispo: dispoOnDay(a.id, selectedCell.date) }))
+                    .filter(({ dispo }) => dispo)
+                    .map(({ a, dispo }) => (
+                      <option key={a.id} value={a.id}>
+                        {a.prenom} {a.nom} — dispo {formatHoraire(dispo!, creneaux)}
+                      </option>
+                    ))}
+                </select>
+              </Field>
+              <Field label="Créneau">
+                <select
+                  className="input"
+                  value={draftFor(selectedCell.posteId).creneauId}
+                  onChange={(e) => updateDraft(selectedCell.posteId, { creneauId: e.target.value })}
+                >
+                  <option value="">Personnalisé</option>
+                  {creneaux.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nom} ({c.heure_debut}–{c.heure_fin})</option>
+                  ))}
+                </select>
+              </Field>
+              {!draftFor(selectedCell.posteId).creneauId && (
+                <div className="field-row">
+                  <Field label="Début">
+                    <input
+                      type="time"
+                      className="input"
+                      value={draftFor(selectedCell.posteId).heureDebut}
+                      onChange={(e) => updateDraft(selectedCell.posteId, { heureDebut: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Fin">
+                    <input
+                      type="time"
+                      className="input"
+                      value={draftFor(selectedCell.posteId).heureFin}
+                      onChange={(e) => updateDraft(selectedCell.posteId, { heureFin: e.target.value })}
+                    />
+                  </Field>
+                </div>
+              )}
+              <div className="field-row">
+                <Button
+                  onClick={() => handleAddAffectation(selectedCell.posteId, selectedCell.date)}
+                  disabled={pendingPostes.has(selectedCell.posteId)}
+                >
+                  {pendingPostes.has(selectedCell.posteId) ? 'Affectation…' : 'Affecter'}
+                </Button>
                 <Button variant="secondary" onClick={() => setSelectedCell(null)}>Fermer</Button>
               </div>
-            </Card>
+            </div>
           )}
-        </>
+        </Modal>
       )}
     </div>
   );

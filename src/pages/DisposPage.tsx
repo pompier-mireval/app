@@ -7,7 +7,7 @@ import { fetchAllPostes, fetchVehicules } from '../api/vehicules';
 import type { CreneauType, Disponibilite, Affectation, PosteVehicule, Vehicule } from '../lib/types';
 import { formatHoraire, buildPosteVehiculeLookup } from '../lib/format';
 import { todayIso, daysAgo, inDays, addDays, mondayOf, weekDaysFrom, dayLabel, dayLabelLong } from '../lib/dates';
-import { Card, ErrorBanner, Spinner, Button, PageHeader, Field, EmptyState } from '../components/ui/Primitives';
+import { Card, ErrorBanner, Spinner, Button, PageHeader, Field, EmptyState, Modal } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
 import { IconChevronLeft, IconChevronRight } from '../components/ui/Icons';
@@ -202,9 +202,8 @@ export function DisposPage() {
       </Card>
 
       {selectedDay && (
-        <Card accent="brand">
-          <strong style={{ fontSize: 13 }}>{dayLabelLong(selectedDay)}</strong>
-          <div className="stack-sm" style={{ marginTop: 12 }}>
+        <Modal title={dayLabelLong(selectedDay)} onClose={() => setSelectedDay(null)}>
+          <div className="stack-sm">
             <Field label="Créneau">
               <select className="input" value={formCreneau} onChange={(e) => setFormCreneau(e.target.value)}>
                 <option value="">Personnalisé</option>
@@ -237,7 +236,7 @@ export function DisposPage() {
               </Button>
             </div>
           </div>
-        </Card>
+        </Modal>
       )}
     </div>
   );
