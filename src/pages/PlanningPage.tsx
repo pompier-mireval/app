@@ -10,8 +10,19 @@ import { fetchGardes } from '../api/gardes';
 import { fetchGardeSemaine, setGardeSemaine, clearGardeSemaine } from '../api/gardeSemaines';
 import type { Vehicule, PosteVehicule, Agent, AgentCompetence, Affectation, CreneauType, Disponibilite, Garde } from '../lib/types';
 import type { PosteCompetenceLink } from '../api/vehicules';
-import { formatHoraire } from '../lib/format';
-import { todayIso, addDays, mondayOf, weekDaysFrom, dayLabel, daysAgo } from '../lib/dates';
+import { formatHoraire, isHoraireNuit } from '../lib/format';
+import {
+  todayIso,
+  dayLabel,
+  daysAgo,
+  gardeBlocOf,
+  nextGardeBloc,
+  prevGardeBloc,
+  gardeBlocEnd,
+  gardeBlocDays,
+  gardeBlocCalendarDays,
+  gardeBlocLabel,
+} from '../lib/dates';
 import { AgentLink } from '../components/ui/AgentLink';
 import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Button, Status, Modal } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
@@ -34,6 +45,7 @@ export function PlanningPage() {
   // peuvent modifier — aligné sur ce qu'autorisent les policies RLS.
   const canEdit = agent?.niveau_acces === 'admin' || agent?.niveau_acces === 'superadmin';
   const [viewMode, setViewMode] = useState<'jour' | 'semaine'>('semaine');
+  const [horaireMode, setHoraireMode] = useState<'jour' | 'nuit'>('jour');
   const [date, setDate] = useState(todayIso());
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
   const [postes, setPostes] = useState<PosteVehicule[]>([]);
@@ -53,9 +65,11 @@ export function PlanningPage() {
   const [genProgress, setGenProgress] = useState<{ done: number; total: number } | null>(null);
   const [pendingPostes, setPendingPostes] = useState<Set<string>>(new Set());
 
-  const weekStart = useMemo(() => mondayOf(date), [date]);
-  const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
-  const weekDays = useMemo(() => weekDaysFrom(weekStart), [weekStart]);
+  const bloc = useMemo(() => gardeBlocOf(date), [date]);
+  const weekStart = bloc.start;
+  const weekEnd = useMemo(() => gardeBlocEnd(bloc), [bloc]);
+  const weekDays = useMemo(() => gardeBlocCalendarDays(bloc), [bloc]);
+  const visibleDays = useMemo(() => gardeBlocDays(bloc, horaireMode), [bloc, horaireMode]);
 
   useEffect(() => {
     setLoading(true);
@@ -121,6 +135,12 @@ export function PlanningPage() {
 
   function affectationsAt(day: string, posteId: string): Affectation[] {
     return affectations.filter((a) => a.date === day && a.poste_vehicule_id === posteId);
+  }
+
+  // Filtré selon le bouton jour/nuit — n'affecte que l'affichage, jamais
+  // les vérifications de conflit (agentsAlreadyOnVehicule, génération auto).
+  function displayAffectationsAt(day: string, posteId: string): Affectation[] {
+    return affectationsAt(day, posteId).filter((a) => isHoraireNuit(a, creneaux) === (horaireMode === 'nuit'));
   }
 
   function vehiculeIdForPoste(posteId: string): string | undefined {
@@ -331,7 +351,7 @@ export function PlanningPage() {
 
   if (loading) return <Spinner />;
 
-  const periodeLabel = viewMode === 'jour' ? `Planning du ${date}` : `Semaine du ${weekStart} au ${weekEnd}`;
+  const periodeLabel = viewMode === 'jour' ? `Planning du ${date}` : gardeBlocLabel(bloc);
   const gardeSemaineNom = gardes.find((g) => g.id === gardeSemaineId)?.nom;
 
   return (
@@ -354,17 +374,21 @@ export function PlanningPage() {
               <button className={viewMode === 'jour' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setViewMode('jour')}>Jour</button>
               <button className={viewMode === 'semaine' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setViewMode('semaine')}>Semaine</button>
             </div>
+            <div className="view-toggle">
+              <button className={horaireMode === 'jour' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setHoraireMode('jour')}>Journée</button>
+              <button className={horaireMode === 'nuit' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setHoraireMode('nuit')}>Nuit</button>
+            </div>
             {viewMode === 'jour' ? (
               <Field label="Date" style={{ maxWidth: 200 }}>
                 <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
               </Field>
             ) : (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <Button variant="secondary" onClick={() => setDate(addDays(weekStart, -7))}>
+                <Button variant="secondary" onClick={() => setDate(prevGardeBloc(bloc).start)}>
                   <IconChevronLeft /> Précédente
                 </Button>
                 <Button variant="secondary" onClick={() => setDate(todayIso())}>Aujourd'hui</Button>
-                <Button variant="secondary" onClick={() => setDate(addDays(weekStart, 7))}>
+                <Button variant="secondary" onClick={() => setDate(nextGardeBloc(bloc).start)}>
                   Suivante <IconChevronRight />
                 </Button>
               </div>
@@ -374,7 +398,7 @@ export function PlanningPage() {
         </div>
 
         {viewMode === 'semaine' && (
-          <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 10 }}>Semaine du {weekStart} au {weekEnd}</p>
+          <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 10 }}>{gardeBlocLabel(bloc)}</p>
         )}
 
         {viewMode === 'semaine' && canEdit && (
@@ -402,8 +426,10 @@ export function PlanningPage() {
         <Card className="no-print">
           <strong style={{ fontSize: 13 }}>Disponibilités déclarées ce jour</strong>
           <div className="stack-sm" style={{ marginTop: 10 }}>
-            {dispos.length === 0 && <EmptyState>Aucune disponibilité déclarée pour cette date.</EmptyState>}
-            {dispos.map((d) => (
+            {dispos.filter((d) => isHoraireNuit(d, creneaux) === (horaireMode === 'nuit')).length === 0 && (
+              <EmptyState>Aucune disponibilité déclarée pour cette date.</EmptyState>
+            )}
+            {dispos.filter((d) => isHoraireNuit(d, creneaux) === (horaireMode === 'nuit')).map((d) => (
               <div key={d.id} className="list-row">
                 <AgentLink agentId={d.agent_id}>{agentLabel(d.agent_id)}</AgentLink>
                 <Status tone={d.statut === 'disponible' ? 'green' : d.statut === 'partiel' ? 'amber' : 'red'}>
@@ -421,7 +447,7 @@ export function PlanningPage() {
             <strong>{v.nom}</strong>
             <div className="stack" style={{ marginTop: 10 }}>
               {(postesByVehicule[v.id] ?? []).map((poste) => {
-                const current = affectationsAt(date, poste.id);
+                const current = displayAffectationsAt(date, poste.id);
                 return (
                   <div key={poste.id} style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
                     <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{poste.nom_poste}</div>
@@ -471,7 +497,7 @@ export function PlanningPage() {
                 <thead>
                   <tr>
                     <th>Poste</th>
-                    {weekDays.map((d) => (
+                    {visibleDays.map((d) => (
                       <th key={d}>{dayLabel(d)}</th>
                     ))}
                   </tr>
@@ -480,13 +506,13 @@ export function PlanningPage() {
                   {vehicules.map((v) => (
                     <Fragment key={v.id}>
                       <tr className="week-grid-vehicule-row">
-                        <td colSpan={8}>{v.nom}</td>
+                        <td colSpan={1 + visibleDays.length}>{v.nom}</td>
                       </tr>
                       {(postesByVehicule[v.id] ?? []).map((poste) => (
                         <tr key={poste.id}>
                           <td>{poste.nom_poste}</td>
-                          {weekDays.map((d) => {
-                            const dayAffs = affectationsAt(d, poste.id);
+                          {visibleDays.map((d) => {
+                            const dayAffs = displayAffectationsAt(d, poste.id);
                             const covered = dayAffs.length > 0;
                             const isSelected = selectedCell?.posteId === poste.id && selectedCell?.date === d;
                             return (
@@ -507,7 +533,7 @@ export function PlanningPage() {
                       ))}
                       {(postesByVehicule[v.id] ?? []).length === 0 && (
                         <tr>
-                          <td colSpan={8}><span style={{ color: 'var(--text-3)', fontSize: 12 }}>Aucun poste défini pour {v.nom}</span></td>
+                          <td colSpan={1 + visibleDays.length}><span style={{ color: 'var(--text-3)', fontSize: 12 }}>Aucun poste défini pour {v.nom}</span></td>
                         </tr>
                       )}
                     </Fragment>
@@ -526,7 +552,7 @@ export function PlanningPage() {
           onClose={() => setSelectedCell(null)}
         >
           <div className="stack-sm">
-            {affectationsAt(selectedCell.date, selectedCell.posteId).map((a) => (
+            {displayAffectationsAt(selectedCell.date, selectedCell.posteId).map((a) => (
               <div key={a.id} className="list-row">
                 <span>
                   <AgentLink agentId={a.agent_id}>{agentLabel(a.agent_id)}</AgentLink>{' '}
@@ -537,7 +563,7 @@ export function PlanningPage() {
                 )}
               </div>
             ))}
-            {affectationsAt(selectedCell.date, selectedCell.posteId).length === 0 && (
+            {displayAffectationsAt(selectedCell.date, selectedCell.posteId).length === 0 && (
               <EmptyState>Aucun agent affecté sur ce poste pour l'instant.</EmptyState>
             )}
           </div>

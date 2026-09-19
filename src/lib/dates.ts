@@ -51,34 +51,60 @@ export function dayLabelLong(dateStr: string): string {
   return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });
 }
 
-// ---------- Blocs de garde : Lundi-Jeudi ou Vendredi-Dimanche ----------
-// La caserne ne fonctionne pas sur une semaine calendaire classique : les
-// gardes s'enchaînent sur ces deux blocs fixes. On affiche toujours un
-// seul bloc à la fois (jamais les deux ensemble).
+// ---------- Blocs de garde : semaine (Lun 7h → Ven 19h) ou week-end (Ven 19h → Lun 7h) ----------
+// La caserne ne fonctionne pas sur une semaine calendaire classique : le
+// planning s'enchaîne sur ces deux blocs fixes, jamais affichés ensemble.
 
-export type BlocType = 'lundi_jeudi' | 'vendredi_dimanche';
+export type GardeBlocType = 'semaine' | 'weekend';
 
-export function defaultBlocType(dateStr: string): BlocType {
-  const day = new Date(`${dateStr}T00:00:00`).getDay(); // 0 = dimanche
-  return day === 0 || day === 5 || day === 6 ? 'vendredi_dimanche' : 'lundi_jeudi';
+export interface GardeBloc {
+  type: GardeBlocType;
+  start: string; // lundi pour 'semaine', vendredi pour 'weekend'
 }
 
-// Début du bloc (un lundi pour lundi_jeudi, un vendredi pour vendredi_dimanche)
-export function blocStart(anchorDate: string, blocType: BlocType): string {
-  const monday = mondayOf(anchorDate);
-  return blocType === 'lundi_jeudi' ? monday : addDays(monday, 4);
+// Bloc contenant la date donnée. Le vendredi appartient calendairement au
+// bloc week-end (sa portion nuit) même si sa portion jour est encore
+// affichée dans le bloc semaine précédent — voir gardeBlocDays.
+export function gardeBlocOf(dateStr: string): GardeBloc {
+  const monday = mondayOf(dateStr);
+  const friday = addDays(monday, 4);
+  return dateStr < friday ? { type: 'semaine', start: monday } : { type: 'weekend', start: friday };
 }
 
-export function blocDays(start: string, blocType: BlocType): string[] {
-  const length = blocType === 'lundi_jeudi' ? 4 : 3;
-  return Array.from({ length }, (_, i) => addDays(start, i));
+export function nextGardeBloc(bloc: GardeBloc): GardeBloc {
+  return bloc.type === 'semaine'
+    ? { type: 'weekend', start: addDays(bloc.start, 4) }
+    : { type: 'semaine', start: addDays(bloc.start, 3) };
 }
 
-export function blocTypeLabel(blocType: BlocType): string {
-  return blocType === 'lundi_jeudi' ? 'Lundi – Jeudi' : 'Vendredi – Dimanche';
+export function prevGardeBloc(bloc: GardeBloc): GardeBloc {
+  return bloc.type === 'semaine'
+    ? { type: 'weekend', start: addDays(bloc.start, -3) }
+    : { type: 'semaine', start: addDays(bloc.start, -4) };
 }
 
-export function blocLabel(start: string, blocType: BlocType): string {
-  const days = blocDays(start, blocType);
-  return `${blocTypeLabel(blocType)} · du ${start} au ${days[days.length - 1]}`;
+// Bornes calendaires du bloc (pour les requêtes de plage).
+export function gardeBlocEnd(bloc: GardeBloc): string {
+  return addDays(bloc.start, bloc.type === 'semaine' ? 4 : 2);
+}
+
+// Tous les jours calendaires touchés par le bloc, jour et nuit confondus.
+export function gardeBlocCalendarDays(bloc: GardeBloc): string[] {
+  const length = bloc.type === 'semaine' ? 5 : 3;
+  return Array.from({ length }, (_, i) => addDays(bloc.start, i));
+}
+
+// Jours à afficher en colonne pour le mode jour/nuit sélectionné : le
+// vendredi n'a de portion nuit que dans le bloc week-end, et de portion
+// jour que dans le bloc semaine.
+export function gardeBlocDays(bloc: GardeBloc, mode: 'jour' | 'nuit'): string[] {
+  const days = gardeBlocCalendarDays(bloc);
+  if (bloc.type === 'semaine') return mode === 'nuit' ? days.slice(0, 4) : days;
+  return mode === 'jour' ? days.slice(1) : days;
+}
+
+export function gardeBlocLabel(bloc: GardeBloc): string {
+  return bloc.type === 'semaine'
+    ? `Semaine du ${dayLabel(bloc.start)} 7h au ${dayLabel(gardeBlocEnd(bloc))} 19h`
+    : `Week-end du ${dayLabel(bloc.start)} 19h au ${dayLabel(gardeBlocEnd(bloc))} 7h`;
 }
