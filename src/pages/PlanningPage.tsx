@@ -58,7 +58,7 @@ export function PlanningPage() {
   const [gardes, setGardes] = useState<Garde[]>([]);
   const [gardeSemaineId, setGardeSemaineId] = useState<string>('');
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
-  const [selectedCell, setSelectedCell] = useState<{ posteId: string; date: string } | null>(null);
+  const [selectedCell, setSelectedCell] = useState<{ posteId: string; date: string; horaire: 'jour' | 'nuit' } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -70,6 +70,25 @@ export function PlanningPage() {
   const weekEnd = useMemo(() => gardeBlocEnd(bloc), [bloc]);
   const weekDays = useMemo(() => gardeBlocCalendarDays(bloc), [bloc]);
   const visibleDays = useMemo(() => gardeBlocDays(bloc, horaireMode), [bloc, horaireMode]);
+
+  // Un week-end (Ven 19h → Lun 7h) s'affiche toujours sur ses 5 créneaux
+  // d'un coup — Ven nuit, Sam jour, Sam nuit, Dim jour, Dim nuit — plutôt
+  // que de forcer à basculer Journée/Nuit comme pour une semaine classique
+  // (le vendredi n'a pas de portion jour dans ce bloc, voir gardeBlocDays).
+  interface Slot { date: string; horaire: 'jour' | 'nuit'; label: string }
+  const slots: Slot[] = useMemo(() => {
+    if (bloc.type === 'weekend') {
+      const [vendredi, samedi, dimanche] = weekDays;
+      return [
+        { date: vendredi, horaire: 'nuit', label: `${dayLabel(vendredi)} nuit` },
+        { date: samedi, horaire: 'jour', label: `${dayLabel(samedi)} jour` },
+        { date: samedi, horaire: 'nuit', label: `${dayLabel(samedi)} nuit` },
+        { date: dimanche, horaire: 'jour', label: `${dayLabel(dimanche)} jour` },
+        { date: dimanche, horaire: 'nuit', label: `${dayLabel(dimanche)} nuit` },
+      ];
+    }
+    return visibleDays.map((d) => ({ date: d, horaire: horaireMode, label: dayLabel(d) }));
+  }, [bloc, weekDays, visibleDays, horaireMode]);
 
   useEffect(() => {
     setLoading(true);
@@ -137,10 +156,13 @@ export function PlanningPage() {
     return affectations.filter((a) => a.date === day && a.poste_vehicule_id === posteId);
   }
 
-  // Filtré selon le bouton jour/nuit — n'affecte que l'affichage, jamais
-  // les vérifications de conflit (agentsAlreadyOnVehicule, génération auto).
-  function displayAffectationsAt(day: string, posteId: string): Affectation[] {
-    return affectationsAt(day, posteId).filter((a) => isHoraireNuit(a, creneaux) === (horaireMode === 'nuit'));
+  // Filtré selon jour/nuit — n'affecte que l'affichage, jamais les
+  // vérifications de conflit (agentsAlreadyOnVehicule, génération auto).
+  // Le paramètre par défaut couvre la vue "Jour" (une seule date, pilotée
+  // par le bouton Journée/Nuit) ; la vue "Semaine" week-end passe le
+  // créneau explicite de chaque colonne (voir `slots`).
+  function displayAffectationsAt(day: string, posteId: string, horaire: 'jour' | 'nuit' = horaireMode): Affectation[] {
+    return affectationsAt(day, posteId).filter((a) => isHoraireNuit(a, creneaux) === (horaire === 'nuit'));
   }
 
   function vehiculeIdForPoste(posteId: string): string | undefined {
@@ -374,10 +396,15 @@ export function PlanningPage() {
               <button className={viewMode === 'jour' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setViewMode('jour')}>Jour</button>
               <button className={viewMode === 'semaine' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setViewMode('semaine')}>Semaine</button>
             </div>
-            <div className="view-toggle">
-              <button className={horaireMode === 'jour' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setHoraireMode('jour')}>Journée</button>
-              <button className={horaireMode === 'nuit' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setHoraireMode('nuit')}>Nuit</button>
-            </div>
+            {/* Sans objet pour un week-end en vue Semaine : les 5 créneaux
+                (Ven nuit, Sam jour/nuit, Dim jour/nuit) sont alors tous
+                affichés ensemble, voir `slots`. */}
+            {!(viewMode === 'semaine' && bloc.type === 'weekend') && (
+              <div className="view-toggle">
+                <button className={horaireMode === 'jour' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setHoraireMode('jour')}>Journée</button>
+                <button className={horaireMode === 'nuit' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setHoraireMode('nuit')}>Nuit</button>
+              </div>
+            )}
             {viewMode === 'jour' ? (
               <Field label="Date" style={{ maxWidth: 200 }}>
                 <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -469,7 +496,7 @@ export function PlanningPage() {
 
                     {canEdit && (
                       <div className="no-print" style={{ marginTop: 8 }}>
-                        <Button variant="secondary" onClick={() => setSelectedCell({ posteId: poste.id, date })}>
+                        <Button variant="secondary" onClick={() => setSelectedCell({ posteId: poste.id, date, horaire: horaireMode })}>
                           Affecter un agent
                         </Button>
                       </div>
@@ -492,13 +519,13 @@ export function PlanningPage() {
           )}
 
           <Card>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="week-grid-scroll">
               <table className="week-grid">
                 <thead>
                   <tr>
                     <th>Poste</th>
-                    {visibleDays.map((d) => (
-                      <th key={d}>{dayLabel(d)}</th>
+                    {slots.map((s) => (
+                      <th key={`${s.date}-${s.horaire}`}>{s.label}</th>
                     ))}
                   </tr>
                 </thead>
@@ -506,20 +533,26 @@ export function PlanningPage() {
                   {vehicules.map((v) => (
                     <Fragment key={v.id}>
                       <tr className="week-grid-vehicule-row">
-                        <td colSpan={1 + visibleDays.length}>{v.nom}</td>
+                        <td colSpan={1 + slots.length}>{v.nom}</td>
                       </tr>
                       {(postesByVehicule[v.id] ?? []).map((poste) => (
                         <tr key={poste.id}>
                           <td>{poste.nom_poste}</td>
-                          {visibleDays.map((d) => {
-                            const dayAffs = displayAffectationsAt(d, poste.id);
+                          {slots.map((s) => {
+                            const dayAffs = displayAffectationsAt(s.date, poste.id, s.horaire);
                             const covered = dayAffs.length > 0;
-                            const isSelected = selectedCell?.posteId === poste.id && selectedCell?.date === d;
+                            const isSelected =
+                              selectedCell?.posteId === poste.id &&
+                              selectedCell?.date === s.date &&
+                              selectedCell?.horaire === s.horaire;
                             return (
-                              <td key={d} className={`${covered ? 'week-cell-covered' : 'week-cell-gap'} ${isSelected ? 'week-cell-selected' : ''}`}>
+                              <td
+                                key={`${s.date}-${s.horaire}`}
+                                className={`${covered ? 'week-cell-covered' : 'week-cell-gap'} ${isSelected ? 'week-cell-selected' : ''}`}
+                              >
                                 <button
                                   className="week-cell-btn no-print"
-                                  onClick={() => setSelectedCell({ posteId: poste.id, date: d })}
+                                  onClick={() => setSelectedCell({ posteId: poste.id, date: s.date, horaire: s.horaire })}
                                 >
                                   {covered ? dayAffs.map((a) => agentShortLabel(a.agent_id)).join(', ') : '—'}
                                 </button>
@@ -533,7 +566,7 @@ export function PlanningPage() {
                       ))}
                       {(postesByVehicule[v.id] ?? []).length === 0 && (
                         <tr>
-                          <td colSpan={1 + visibleDays.length}><span style={{ color: 'var(--text-3)', fontSize: 12 }}>Aucun poste défini pour {v.nom}</span></td>
+                          <td colSpan={1 + slots.length}><span style={{ color: 'var(--text-3)', fontSize: 12 }}>Aucun poste défini pour {v.nom}</span></td>
                         </tr>
                       )}
                     </Fragment>
@@ -548,11 +581,11 @@ export function PlanningPage() {
 
       {selectedCell && (
         <Modal
-          title={`${postes.find((p) => p.id === selectedCell.posteId)?.nom_poste ?? ''} — ${dayLabel(selectedCell.date)}`}
+          title={`${postes.find((p) => p.id === selectedCell.posteId)?.nom_poste ?? ''} — ${dayLabel(selectedCell.date)} ${selectedCell.horaire}`}
           onClose={() => setSelectedCell(null)}
         >
           <div className="stack-sm">
-            {displayAffectationsAt(selectedCell.date, selectedCell.posteId).map((a) => (
+            {displayAffectationsAt(selectedCell.date, selectedCell.posteId, selectedCell.horaire).map((a) => (
               <div key={a.id} className="list-row">
                 <span>
                   <AgentLink agentId={a.agent_id}>{agentLabel(a.agent_id)}</AgentLink>{' '}
@@ -563,7 +596,7 @@ export function PlanningPage() {
                 )}
               </div>
             ))}
-            {displayAffectationsAt(selectedCell.date, selectedCell.posteId).length === 0 && (
+            {displayAffectationsAt(selectedCell.date, selectedCell.posteId, selectedCell.horaire).length === 0 && (
               <EmptyState>Aucun agent affecté sur ce poste pour l'instant.</EmptyState>
             )}
           </div>
