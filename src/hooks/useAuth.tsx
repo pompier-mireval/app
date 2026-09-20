@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import { fetchCurrentAgent } from '../api/agents';
-import type { Agent } from '../lib/types';
+import type { Agent, NiveauAcces } from '../lib/types';
 
 interface AuthContextValue {
   session: Session | null;
@@ -13,14 +13,44 @@ interface AuthContextValue {
   updatePassword: (newPassword: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshAgent: () => Promise<void>;
+  // Aperçu de rôle : purement visuel, réservé au superadmin (voir plus
+  // bas). Ne change RIEN côté données — chaque requête Supabase reste
+  // filtrée par les policies RLS selon le vrai niveau_acces en base, donc
+  // "voir en tant qu'utilisateur" ne peut jamais servir à contourner une
+  // restriction, seulement à vérifier ce qu'un rôle donné voit à l'écran.
+  rolePreview: NiveauAcces | null;
+  setRolePreview: (niveau: NiveauAcces | null) => void;
+  // Niveau réel (jamais affecté par l'aperçu) — sert à décider qui a le
+  // droit d'afficher le sélecteur d'aperçu, sans quoi le sélecteur
+  // disparaîtrait dès qu'on prévisualise un rôle inférieur au sien.
+  realNiveauAcces: NiveauAcces | null;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const ROLE_PREVIEW_KEY = 'rolePreview';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [agent, setAgent] = useState<Agent | null>(null);
+  const [realAgent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rolePreview, setRolePreviewState] = useState<NiveauAcces | null>(
+    () => (localStorage.getItem(ROLE_PREVIEW_KEY) as NiveauAcces | null) || null
+  );
+
+  function setRolePreview(niveau: NiveauAcces | null) {
+    setRolePreviewState(niveau);
+    if (niveau) localStorage.setItem(ROLE_PREVIEW_KEY, niveau);
+    else localStorage.removeItem(ROLE_PREVIEW_KEY);
+  }
+
+  // Seul un vrai superadmin peut se prévisualiser dans un rôle moindre —
+  // ça exclut à la fois "un utilisateur qui bidouille le localStorage pour
+  // se voir en superadmin" (ignoré ici) et toute confusion sur qui a
+  // réellement les droits en base.
+  const agent: Agent | null =
+    realAgent && realAgent.niveau_acces === 'superadmin' && rolePreview
+      ? { ...realAgent, niveau_acces: rolePreview }
+      : realAgent;
 
   async function loadAgent() {
     try {
@@ -80,6 +110,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updatePassword,
     signOut,
     refreshAgent: loadAgent,
+    rolePreview,
+    setRolePreview,
+    realNiveauAcces: realAgent?.niveau_acces ?? null,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

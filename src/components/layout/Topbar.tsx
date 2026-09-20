@@ -1,6 +1,7 @@
 import { useAuth } from '../../hooks/useAuth';
 import { Link } from 'react-router-dom';
 import { IconSun, IconMoon, IconPower } from '../ui/Icons';
+import { RolePreviewSwitch } from './RolePreviewSwitch';
 
 interface Props {
   darkMode: boolean;
@@ -23,6 +24,7 @@ export function Topbar({ darkMode, onToggleDark }: Props) {
         <span className="topbar-title">Planning caserne</span>
       </div>
       <div className="topbar-actions">
+        <RolePreviewSwitch />
         <button
           className="icon-btn"
           onClick={onToggleDark}
