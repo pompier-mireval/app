@@ -8,7 +8,7 @@ import { LegalLayout } from '../../components/legal/LegalLayout';
 export function MentionsLegalesPage() {
   return (
     <LegalLayout title="Mentions légales">
-      <p className="legal-updated">Dernière mise à jour : <mark className="todo">À COMPLÉTER</mark></p>
+      <p className="legal-updated">Dernière mise à jour : 20/09/2026</p>
 
       <h2>Éditeur du site</h2>
       <p>

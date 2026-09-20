@@ -10,7 +10,7 @@ import { LegalLayout } from '../../components/legal/LegalLayout';
 export function ConfidentialitePage() {
   return (
     <LegalLayout title="Politique de confidentialité">
-      <p className="legal-updated">Dernière mise à jour : <mark className="todo">À COMPLÉTER</mark></p>
+      <p className="legal-updated">Dernière mise à jour : 20/09/2026</p>
 
       <p>
         Cette application est un outil personnel, gratuit et non officiel, créé par un pompier du
@@ -95,7 +95,7 @@ export function ConfidentialitePage() {
       <h2>Retrait du consentement</h2>
       <p>
         Tu peux à tout moment demander la suppression de ton compte et de tes données à{' '}
-        <mark className="todo">[EMAIL DE CONTACT]</mark>. Les données liées à l'historique des gardes
+        tbastien6@gmail.com. Les données liées à l'historique des gardes
         déjà effectuées peuvent être conservées sous forme anonymisée à des fins statistiques.
       </p>
 
@@ -103,7 +103,7 @@ export function ConfidentialitePage() {
       <p>
         Conformément au RGPD, tu disposes d'un droit d'accès, de rectification, d'effacement,
         d'opposition, de limitation et de portabilité de tes données. Pour les exercer, contacte
-        <mark className="todo"> [EMAIL DE CONTACT RGPD]</mark>. Tu peux également introduire une
+        tbastien6@gmail.com. Tu peux également introduire une
         réclamation auprès de la CNIL (<a href="https://www.cnil.fr" target="_blank" rel="noreferrer">www.cnil.fr</a>).
       </p>
     </LegalLayout>

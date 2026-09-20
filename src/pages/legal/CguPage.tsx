@@ -7,7 +7,7 @@ import { LegalLayout } from '../../components/legal/LegalLayout';
 export function CguPage() {
   return (
     <LegalLayout title="Conditions générales d'utilisation">
-      <p className="legal-updated">Dernière mise à jour : <mark className="todo">À COMPLÉTER</mark></p>
+      <p className="legal-updated">Dernière mise à jour : 20/09/2026</p>
 
       <h2>Objet</h2>
       <p>
