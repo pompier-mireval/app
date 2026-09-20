@@ -15,6 +15,7 @@ import { Card, ErrorBanner, Spinner, Button, PageHeader, Field, EmptyState } fro
 import { AgentLink } from '../components/ui/AgentLink';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
+import { RotationGardes } from '../components/gardes/RotationGardes';
 
 export function GardesPage() {
   const { showToast } = useToast();
@@ -111,6 +112,8 @@ export function GardesPage() {
           <Button onClick={handleCreateGarde}>Créer</Button>
         </div>
       </Card>
+
+      <RotationGardes gardes={gardes} onError={setError} />
 
       {gardes.map((g) => (
         <Card key={g.id} accent="brand">

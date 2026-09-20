@@ -41,6 +41,14 @@ export function weekDaysFrom(weekStart: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 }
 
+// Toujours le vendredi de la semaine contenant la date donnée — le
+// pendant "week-end" de mondayOf, utile pour ancrer une rotation de garde
+// sur le vendredi (voir gardeBlocOf : le vendredi appartient au bloc
+// week-end).
+export function fridayOf(dateStr: string): string {
+  return addDays(mondayOf(dateStr), 4);
+}
+
 export function dayLabel(dateStr: string): string {
   const d = new Date(`${dateStr}T00:00:00`);
   return d.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' });
