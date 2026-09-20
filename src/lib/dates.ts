@@ -114,5 +114,5 @@ export function gardeBlocDays(bloc: GardeBloc, mode: 'jour' | 'nuit'): string[] 
 export function gardeBlocLabel(bloc: GardeBloc): string {
   return bloc.type === 'semaine'
     ? `Semaine du ${dayLabel(bloc.start)} 7h au ${dayLabel(gardeBlocEnd(bloc))} 19h`
-    : `Week-end du ${dayLabel(bloc.start)} 19h au ${dayLabel(gardeBlocEnd(bloc))} 7h`;
+    : `Week-end du ${dayLabel(bloc.start)} 19h au ${dayLabel(gardeBlocEnd(bloc) + 1)} 7h`;
 }
