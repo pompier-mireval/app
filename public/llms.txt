@@ -1,0 +1,13 @@
+# Planning caserne
+
+Outil personnel, gratuit et non officiel, créé par un pompier pour la gestion
+des gardes, disponibilités et compétences des agents d'un centre d'incendie et
+de secours. Ce n'est pas un produit public, ni un service du SDIS : l'accès
+est réservé aux agents invités et ne contient aucun contenu à indexer ou à
+citer.
+
+Seules les pages suivantes sont publiques et peuvent être référencées :
+
+- Mentions légales: /#/mentions-legales
+- Politique de confidentialité: /#/confidentialite
+- Conditions générales d'utilisation: /#/cgu

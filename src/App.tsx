@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { AuthScreen } from './components/auth/AuthScreen';
@@ -12,9 +13,15 @@ import { VehiculesPage } from './pages/VehiculesPage';
 import { ReferentielsPage } from './pages/ReferentielsPage';
 import { AgentProfilePage } from './pages/AgentProfilePage';
 import { ComingSoonPage } from './pages/ComingSoonPage';
+import { MentionsLegalesPage } from './pages/legal/MentionsLegalesPage';
+import { ConfidentialitePage } from './pages/legal/ConfidentialitePage';
+import { CguPage } from './pages/legal/CguPage';
 import { Spinner } from './components/ui/Primitives';
 
-export default function App() {
+// Les pages légales doivent rester accessibles sans session (l'écran de
+// connexion, lui, est public) : ce garde protège uniquement les routes de
+// l'application elle-même, pas les routes légales définies plus bas.
+function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth();
 
   if (loading) {
@@ -29,10 +36,23 @@ export default function App() {
     return <AuthScreen />;
   }
 
+  return <>{children}</>;
+}
+
+export default function App() {
   return (
     <HashRouter>
       <Routes>
-        <Route element={<AppShell />}>
+        <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
+        <Route path="/confidentialite" element={<ConfidentialitePage />} />
+        <Route path="/cgu" element={<CguPage />} />
+        <Route
+          element={
+            <RequireAuth>
+              <AppShell />
+            </RequireAuth>
+          }
+        >
           <Route index element={<Navigate to="/dispos" replace />} />
           <Route path="/dispos" element={<DisposPage />} />
           <Route path="/planning" element={<PlanningPage />} />

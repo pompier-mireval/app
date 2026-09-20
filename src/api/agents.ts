@@ -1,6 +1,16 @@
 import { supabase } from '../lib/supabaseClient';
 import type { Agent } from '../lib/types';
 
+// Réservé admin/superadmin (policy RLS) — pré-crée une fiche agent par
+// email avant sa première connexion. Sans ça, personne de nouveau ne peut
+// jamais rejoindre l'appli : le trigger handle_new_auth_user ne fait plus
+// que rattacher un auth_user_id à une ligne déjà existante (voir
+// security_rls.sql), il n'en crée plus pour un email inconnu.
+export async function inviteAgent(email: string): Promise<void> {
+  const { error } = await supabase.from('agents').insert({ email: email.trim().toLowerCase() });
+  if (error) throw error;
+}
+
 export async function fetchAgents(): Promise<Agent[]> {
   const { data, error } = await supabase
     .from('agents')

@@ -1,5 +1,6 @@
+import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { fetchAgents, updateAgentIdentity, setAgentActif, updateNiveauAcces, updateAgentGrade } from '../api/agents';
+import { fetchAgents, inviteAgent, updateAgentIdentity, setAgentActif, updateNiveauAcces, updateAgentGrade } from '../api/agents';
 import { fetchCompetences, grantCompetence, revokeCompetence, fetchAllAgentCompetences } from '../api/competences';
 import { fetchAllAgentGardes } from '../api/gardes';
 import { fetchGrades } from '../api/grades';
@@ -29,6 +30,8 @@ export function AgentsPage() {
   const [editing, setEditing] = useState<string | null>(null);
   const [editNom, setEditNom] = useState('');
   const [editPrenom, setEditPrenom] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
 
   function load() {
     setLoading(true);
@@ -125,6 +128,24 @@ export function AgentsPage() {
     }
   }
 
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setError(null);
+    setInviting(true);
+    try {
+      await inviteAgent(inviteEmail.trim());
+      setInviteEmail('');
+      load();
+      showToast('Agent invité — il pourra se connecter avec cet email.');
+    } catch (err) {
+      console.error(err);
+      setError("Impossible d'inviter cet agent (email déjà utilisé ?).");
+    } finally {
+      setInviting(false);
+    }
+  }
+
   const toneFor = (n: Agent['niveau_acces']) => (n === 'superadmin' ? 'red' : n === 'admin' ? 'amber' : 'neutral');
 
   if (loading) return <Spinner />;
@@ -140,6 +161,21 @@ export function AgentsPage() {
         }
       />
       {error && <ErrorBanner message={error} />}
+
+      <Card>
+        <form onSubmit={handleInvite} className="field-row">
+          <input
+            className="input"
+            type="email"
+            placeholder="email@a-inviter.fr"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+          />
+          <Button type="submit" disabled={inviting}>
+            {inviting ? 'Invitation…' : 'Inviter un agent'}
+          </Button>
+        </form>
+      </Card>
 
       <div className="input-search-wrap">
         <IconSearch className="input-search-icon" />

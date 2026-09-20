@@ -51,6 +51,15 @@ $$;
 -- (référencé par le commentaire dans useAuth.tsx, absent jusqu'ici)
 -- ------------------------------------------------------------
 
+-- Correctif sécurité (2026-09-20) : la version précédente insérait un
+-- nouvel agent pour N'IMPORTE QUEL email qui se connectait, y compris des
+-- emails jamais invités par un admin. Combiné à la policy de lecture
+-- ci-dessous (tout compte connecté peut lire toute la table `agents`),
+-- ça permettait à quiconque connaissait l'URL publique de l'appli de
+-- créer un compte jetable et de récupérer l'email + téléphone de tous les
+-- agents. Désormais, la fonction se contente de RATTACHER l'auth_user_id
+-- à une ligne agent déjà pré-créée par un admin (voir "inviteAgent" côté
+-- app / policy insert ci-dessous) — un email inconnu ne crée plus rien.
 create or replace function handle_new_auth_user()
 returns trigger
 language plpgsql
@@ -58,9 +67,9 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.agents (auth_user_id, email)
-  values (new.id, new.email)
-  on conflict (email) do update set auth_user_id = excluded.auth_user_id;
+  update public.agents
+  set auth_user_id = new.id
+  where email = new.email and auth_user_id is null;
   return new;
 end;
 $$;
@@ -126,8 +135,15 @@ create policy "ecriture agents" on agents for update
   using (auth_user_id = auth.uid() or current_niveau_acces() in ('admin', 'superadmin'))
   with check (auth_user_id = auth.uid() or current_niveau_acces() in ('admin', 'superadmin'));
 
--- Pas de policy insert/delete : la création passe uniquement par le
--- trigger sur auth.users, la désactivation se fait via `actif = false`.
+-- Un admin/superadmin peut pré-créer une ligne agent (email seul, avant
+-- même la première connexion) pour inviter quelqu'un — c'est ce qui
+-- permet au trigger ci-dessus de rattacher son compte au lieu d'ouvrir
+-- l'inscription à n'importe quel email.
+drop policy if exists "creation agents" on agents;
+create policy "creation agents" on agents for insert
+  with check (current_niveau_acces() in ('admin', 'superadmin'));
+
+-- Pas de policy delete : la désactivation se fait via `actif = false`.
 
 -- ------------------------------------------------------------
 -- grades (référentiel) — déjà couvert par schema_v2.sql, on le

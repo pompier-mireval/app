@@ -273,3 +273,40 @@ html, body { overflow-x: hidden; }
 /* Cibles tactiles confortables sur tout écran, pas seulement mobile */
 .checkbox-pill input { width: 16px; height: 16px; }
 .btn-primary, .btn-secondary { min-height: 36px; }
+
+/* ---------- Pages légales (mentions, confidentialité, CGU) ---------- */
+.legal-page { min-height: 100vh; min-height: 100dvh; background: var(--bg); padding: 32px 16px 64px; }
+.legal-page-inner { max-width: 720px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 32px; }
+.legal-back { display: inline-block; margin-bottom: 20px; font-size: 13px; color: var(--text-2); text-decoration: none; }
+.legal-back:hover { color: var(--brand); }
+.legal-title { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+.legal-updated { font-size: 12px; color: var(--text-3); margin: 0 0 24px; }
+.legal-page h2 { font-size: 15px; font-weight: 600; margin: 28px 0 8px; }
+.legal-page p, .legal-page li { font-size: 13.5px; line-height: 1.6; color: var(--text-2); }
+.legal-page ul { padding-left: 20px; margin: 8px 0; }
+.legal-page table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+.legal-page th, .legal-page td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.legal-page mark.todo { background: var(--amber-soft); color: var(--amber); padding: 1px 5px; border-radius: 4px; font-weight: 600; font-size: 12px; }
+
+.legal-links { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.legal-links a { font-size: 12px; color: var(--text-3); text-decoration: none; }
+.legal-links a:hover { color: var(--brand); text-decoration: underline; }
+
+.sidebar-footer { margin-top: auto; padding: 12px 14px; border-top: 1px solid var(--border); }
+.auth-legal-links { margin-top: 18px; }
+
+/* ---------- Cibles tactiles élargies sur mobile ----------
+   Un pompier peut consulter/valider son planning avec des gants ou entre
+   deux interventions : sous 700px, on rapproche les cibles des 44px
+   recommandés au lieu du confort desktop (36-40px) pensé pour la souris. */
+@media (max-width: 700px) {
+  .btn-primary, .btn-secondary { min-height: 44px; padding-left: 18px; padding-right: 18px; }
+  .icon-btn { width: 44px; height: 44px; }
+  .link-edit, .link-delete { padding: 12px 6px; margin: -12px -6px; }
+  .week-cell-btn { padding: 10px 4px; min-height: 44px; }
+  .view-toggle-btn { padding: 10px 16px; }
+  input[type='checkbox'] { width: 22px; height: 22px; }
+  input[type='checkbox']:checked::after { left: 7px; top: 3px; width: 6px; height: 11px; }
+  .checkbox-pill { padding: 9px 12px 9px 8px; }
+  .checkbox-pill input[type='checkbox'] { width: 18px; height: 18px; }
+}

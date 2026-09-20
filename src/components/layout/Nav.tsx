@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { LegalLinks } from '../legal/LegalLinks';
 import type { NiveauAcces } from '../../lib/types';
 import {
   IconClock,
@@ -62,6 +63,9 @@ export function Sidebar() {
           <span className="nav-label">{item.label}</span>
         </NavLink>
       ))}
+      <div className="sidebar-footer">
+        <LegalLinks />
+      </div>
     </nav>
   );
 }

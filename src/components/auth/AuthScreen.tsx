@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { LegalLinks } from '../legal/LegalLinks';
 
 export function AuthScreen() {
   const { sendMagicLink, signInWithPassword } = useAuth();
@@ -9,6 +10,7 @@ export function AuthScreen() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [cguAccepted, setCguAccepted] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,6 +22,13 @@ export function AuthScreen() {
     }
     if (mode === 'mdp' && !password) {
       setError('Renseigne ton mot de passe.');
+      return;
+    }
+    // Le lien magique sert aussi de première connexion pour un agent tout
+    // juste invité : c'est donc le seul moment où l'acceptation peut être
+    // recueillie (il n'y a pas de formulaire d'inscription séparé).
+    if (mode === 'lien' && !cguAccepted) {
+      setError("Coche la case pour accepter les CGU et la politique de confidentialité avant de continuer.");
       return;
     }
 
@@ -97,6 +106,21 @@ export function AuthScreen() {
                   autoComplete="current-password"
                 />
               )}
+              {mode === 'lien' && (
+                <label className="checkbox-pill" style={{ fontSize: 12 }}>
+                  <input
+                    type="checkbox"
+                    checked={cguAccepted}
+                    onChange={(e) => setCguAccepted(e.target.checked)}
+                  />
+                  J'ai lu et j'accepte les{' '}
+                  <a href="#/cgu" target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>CGU</a>{' '}
+                  et la{' '}
+                  <a href="#/confidentialite" target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+                    politique de confidentialité
+                  </a>
+                </label>
+              )}
               {error && <p style={{ color: 'var(--red)', fontSize: 13 }}>{error}</p>}
               <button className="btn-primary" type="submit" disabled={submitting}>
                 {submitting ? 'Connexion…' : mode === 'lien' ? 'Recevoir le lien de connexion' : 'Se connecter'}
@@ -104,6 +128,7 @@ export function AuthScreen() {
             </form>
           </>
         )}
+        <LegalLinks className="auth-legal-links" />
       </div>
     </div>
   );
