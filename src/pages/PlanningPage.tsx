@@ -548,7 +548,6 @@ export function PlanningPage() {
               <div style={{ fontSize: 13, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {bloc.type === 'semaine' ? (
                   <>
-                    {gardeJourNom && <span>Garde de jour : <strong>{gardeJourNom}</strong></span>}
                     {gardeNuitNom && <span>Garde de nuit : <strong>{gardeNuitNom}</strong></span>}
                   </>
                 ) : (
