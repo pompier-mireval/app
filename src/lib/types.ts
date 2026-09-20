@@ -92,9 +92,15 @@ export interface Grade {
   created_at: string;
 }
 
+// 'jour' (Lun-Ven journée, fixe) / 'nuit' (Lun-Jeu nuit) / 'weekend'
+// (Ven nuit-Dim nuit) — voir schema_v3.sql. Nuit et weekend tournent
+// habituellement sur un cycle de gardes, jour reste la même chaque semaine.
+export type GardeSemaineType = 'jour' | 'nuit' | 'weekend';
+
 export interface GardeSemaine {
   id: string;
   semaine_debut: string;
+  type: GardeSemaineType;
   garde_id: string;
   created_by: string | null;
   created_at: string;

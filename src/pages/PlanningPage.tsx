@@ -7,8 +7,8 @@ import { fetchAffectationsForDate, fetchAffectationsForRange, createAffectation,
 import { fetchCreneauxTypes } from '../api/creneaux';
 import { fetchDisponibilitesForDate, fetchDisponibilitesForRange } from '../api/disponibilites';
 import { fetchGardes } from '../api/gardes';
-import { fetchGardeSemaine, setGardeSemaine, clearGardeSemaine } from '../api/gardeSemaines';
-import type { Vehicule, PosteVehicule, Agent, AgentCompetence, Affectation, CreneauType, Disponibilite, Garde } from '../lib/types';
+import { fetchGardeSemainesForDate, setGardeSemaine, clearGardeSemaine } from '../api/gardeSemaines';
+import type { Vehicule, PosteVehicule, Agent, AgentCompetence, Affectation, CreneauType, Disponibilite, Garde, GardeSemaineType } from '../lib/types';
 import type { PosteCompetenceLink } from '../api/vehicules';
 import { formatHoraire, isHoraireNuit } from '../lib/format';
 import {
@@ -56,7 +56,11 @@ export function PlanningPage() {
   const [creneaux, setCreneaux] = useState<CreneauType[]>([]);
   const [dispos, setDispos] = useState<Disponibilite[]>([]);
   const [gardes, setGardes] = useState<Garde[]>([]);
-  const [gardeSemaineId, setGardeSemaineId] = useState<string>('');
+  // Une garde de jour et une garde de nuit peuvent coexister sur un même
+  // bloc "semaine" ; un bloc "weekend" n'a que 'weekend' (voir schema_v3.sql).
+  const [gardeJourId, setGardeJourId] = useState<string>('');
+  const [gardeNuitId, setGardeNuitId] = useState<string>('');
+  const [gardeWeekendId, setGardeWeekendId] = useState<string>('');
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [selectedCell, setSelectedCell] = useState<{ posteId: string; date: string; horaire: 'jour' | 'nuit' } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -126,12 +130,14 @@ export function PlanningPage() {
       Promise.all([
         fetchAffectationsForRange(weekStart, weekEnd),
         fetchDisponibilitesForRange(weekStart, weekEnd),
-        fetchGardeSemaine(weekStart),
+        fetchGardeSemainesForDate(weekStart),
       ])
         .then(([a, d, gs]) => {
           setAffectations(a);
           setDispos(d);
-          setGardeSemaineId(gs?.garde_id ?? '');
+          setGardeJourId(gs.find((g) => g.type === 'jour')?.garde_id ?? '');
+          setGardeNuitId(gs.find((g) => g.type === 'nuit')?.garde_id ?? '');
+          setGardeWeekendId(gs.find((g) => g.type === 'weekend')?.garde_id ?? '');
         })
         .catch(() => setError('Impossible de charger les données de la semaine.'));
     }
@@ -260,12 +266,13 @@ export function PlanningPage() {
     }
   }
 
-  async function handleChangeGardeSemaine(gardeId: string) {
+  async function handleChangeGardeSemaine(type: GardeSemaineType, gardeId: string) {
     setError(null);
+    const setLocal = type === 'jour' ? setGardeJourId : type === 'nuit' ? setGardeNuitId : setGardeWeekendId;
     try {
-      if (gardeId) await setGardeSemaine(weekStart, gardeId);
-      else await clearGardeSemaine(weekStart);
-      setGardeSemaineId(gardeId);
+      if (gardeId) await setGardeSemaine(weekStart, type, gardeId);
+      else await clearGardeSemaine(weekStart, type);
+      setLocal(gardeId);
     } catch {
       setError('Impossible de définir la garde de la semaine.');
     }
@@ -374,7 +381,10 @@ export function PlanningPage() {
   if (loading) return <Spinner />;
 
   const periodeLabel = viewMode === 'jour' ? `Planning du ${date}` : gardeBlocLabel(bloc);
-  const gardeSemaineNom = gardes.find((g) => g.id === gardeSemaineId)?.nom;
+  const nomDe = (id: string) => gardes.find((g) => g.id === id)?.nom;
+  const gardeJourNom = nomDe(gardeJourId);
+  const gardeNuitNom = nomDe(gardeNuitId);
+  const gardeWeekendNom = nomDe(gardeWeekendId);
 
   return (
     <div className="stack">
@@ -430,14 +440,35 @@ export function PlanningPage() {
 
         {viewMode === 'semaine' && canEdit && (
           <div className="field-row" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-            <Field label="Garde de service cette semaine">
-              <select className="input" value={gardeSemaineId} onChange={(e) => handleChangeGardeSemaine(e.target.value)}>
-                <option value="">— non définie —</option>
-                {gardes.map((g) => (
-                  <option key={g.id} value={g.id}>{g.nom}</option>
-                ))}
-              </select>
-            </Field>
+            {bloc.type === 'semaine' ? (
+              <>
+                <Field label="Garde de jour (Lun-Ven, fixe)">
+                  <select className="input" value={gardeJourId} onChange={(e) => handleChangeGardeSemaine('jour', e.target.value)}>
+                    <option value="">— non définie —</option>
+                    {gardes.map((g) => (
+                      <option key={g.id} value={g.id}>{g.nom}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Garde de nuit (Lun-Jeu, tourne)">
+                  <select className="input" value={gardeNuitId} onChange={(e) => handleChangeGardeSemaine('nuit', e.target.value)}>
+                    <option value="">— non définie —</option>
+                    {gardes.map((g) => (
+                      <option key={g.id} value={g.id}>{g.nom}</option>
+                    ))}
+                  </select>
+                </Field>
+              </>
+            ) : (
+              <Field label="Garde de week-end (tourne)">
+                <select className="input" value={gardeWeekendId} onChange={(e) => handleChangeGardeSemaine('weekend', e.target.value)}>
+                  <option value="">— non définie —</option>
+                  {gardes.map((g) => (
+                    <option key={g.id} value={g.id}>{g.nom}</option>
+                  ))}
+                </select>
+              </Field>
+            )}
             <Button onClick={handleAutoGenerate} disabled={generating}>
               {generating
                 ? genProgress
@@ -512,9 +543,18 @@ export function PlanningPage() {
         ))
       ) : (
         <>
-          {gardeSemaineNom && (
+          {(gardeJourNom || gardeNuitNom || gardeWeekendNom) && (
             <Card accent="brand" className="no-print">
-              <span style={{ fontSize: 13 }}>Garde de service pour cette période : <strong>{gardeSemaineNom}</strong></span>
+              <div style={{ fontSize: 13, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {bloc.type === 'semaine' ? (
+                  <>
+                    {gardeJourNom && <span>Garde de jour : <strong>{gardeJourNom}</strong></span>}
+                    {gardeNuitNom && <span>Garde de nuit : <strong>{gardeNuitNom}</strong></span>}
+                  </>
+                ) : (
+                  gardeWeekendNom && <span>Garde de week-end : <strong>{gardeWeekendNom}</strong></span>
+                )}
+              </div>
             </Card>
           )}
 
