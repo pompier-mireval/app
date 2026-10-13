@@ -70,20 +70,3 @@ export async function askRevision(question: string, history: ChatMessage[]): Pro
   }
   return { answer: data.answer as string, sources: (data.sources ?? {}) as Record<string, RevisionSource> };
 }
-
-export interface QuizzQuestion {
-  question: string;
-  choix: string[];
-  bonne: number;
-  explication: string;
-  source: RevisionSource;
-}
-
-export async function askQuizz(theme: string): Promise<QuizzQuestion> {
-  const { data, error } = await supabase.functions.invoke('chat-revision', { body: { mode: 'quizz', question: theme } });
-  if (error) {
-    const detail = await (error as any).context?.json?.().catch(() => null);
-    throw new Error(detail?.error ?? 'Le quizz est indisponible.');
-  }
-  return data.quizz as QuizzQuestion;
-}

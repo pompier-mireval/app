@@ -12,14 +12,12 @@ import { extractPdfPages } from '../lib/pdfText';
 import { Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
-import { Quizz } from '../components/revision/Quizz';
 import { ChatText } from '../components/ui/ChatText';
 
 export function RevisionPage() {
   const { agent } = useAuth();
   const { showToast } = useToast();
   const isSuperadmin = agent?.niveau_acces === 'superadmin';
-  const [mode, setMode] = useState<'chat' | 'quizz'>('chat');
   const [docs, setDocs] = useState<RevisionDocument[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState('');
@@ -104,17 +102,10 @@ export function RevisionPage() {
 
   return (
     <div className="stack">
-      <PageHeader title="Révision" sub="Pose une question ou entraîne-toi avec un quizz : tout vient uniquement des documents de révision." />
+      <PageHeader title="Révision" sub="Pose une question : le chatbot répond uniquement d'après les documents de révision." />
       {error && <ErrorBanner message={error} />}
 
-      <div className="field-row">
-        <Button type="button" variant={mode === 'chat' ? 'primary' : 'secondary'} onClick={() => setMode('chat')}>Questions</Button>
-        <Button type="button" variant={mode === 'quizz' ? 'primary' : 'secondary'} onClick={() => setMode('quizz')}>Quizz</Button>
-      </div>
-
-      {mode === 'quizz' && <Quizz />}
-
-      {mode === 'chat' && <Card accent="brand">
+      <Card accent="brand">
         <div className="stack-sm">
           {messages.length === 0 && <EmptyState>Pose ta première question.</EmptyState>}
           {messages.map((m, i) => (
@@ -148,7 +139,7 @@ export function RevisionPage() {
           />
           <Button type="submit" disabled={asking || !question.trim()}>Envoyer</Button>
         </form>
-      </Card>}
+      </Card>
 
       {isSuperadmin && (
       <Card>
