@@ -104,8 +104,12 @@ ${corpus}`;
     }),
   });
   if (!res.ok) {
-    console.error('Gemini', res.status, await res.text());
-    return json({ error: res.status === 429 ? 'Limite gratuite atteinte, réessaie dans une minute.' : "Le service d'IA a échoué." }, 502);
+    const detail = await res.text();
+    console.error('Gemini', res.status, detail);
+    if (res.status === 429) return json({ error: 'Limite gratuite atteinte, réessaie dans une minute.' }, 502);
+    let msg = '';
+    try { msg = JSON.parse(detail)?.error?.message ?? ''; } catch { /* corps non JSON */ }
+    return json({ error: `Le service d'IA a échoué (${res.status}) ${msg}`.trim().slice(0, 300) }, 502);
   }
   const data = await res.json();
   const answer = (data.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? '').join('').trim();

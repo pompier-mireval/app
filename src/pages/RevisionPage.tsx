@@ -27,11 +27,16 @@ export function RevisionPage() {
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // La liste des documents est réservée au superadmin (voir schema_v7.sql).
+    if (!isSuperadmin) {
+      setLoading(false);
+      return;
+    }
     fetchRevisionDocuments()
       .then(setDocs)
       .catch(() => setError('Impossible de charger les documents.'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [isSuperadmin]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -96,14 +101,12 @@ export function RevisionPage() {
 
   return (
     <div className="stack">
-      <PageHeader title="Révision" sub="Pose une question : le chatbot répond uniquement d'après les documents ci-dessous." />
+      <PageHeader title="Révision" sub="Pose une question : le chatbot répond uniquement d'après les documents de révision." />
       {error && <ErrorBanner message={error} />}
 
       <Card accent="brand">
         <div className="stack-sm">
-          {messages.length === 0 && (
-            <EmptyState>{docs.length === 0 ? "Aucun document déposé pour l'instant." : 'Pose ta première question.'}</EmptyState>
-          )}
+          {messages.length === 0 && <EmptyState>Pose ta première question.</EmptyState>}
           {messages.map((m, i) => (
             <div
               key={i}
@@ -132,22 +135,22 @@ export function RevisionPage() {
             placeholder="Ta question…"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            disabled={docs.length === 0}
           />
-          <Button type="submit" disabled={asking || !question.trim() || docs.length === 0}>Envoyer</Button>
+          <Button type="submit" disabled={asking || !question.trim()}>Envoyer</Button>
         </form>
       </Card>
 
+      {isSuperadmin && (
       <Card>
         <strong>Documents ({docs.length})</strong>
         <div className="stack-sm" style={{ marginTop: 10 }}>
           {docs.map((d) => (
             <div key={d.id} className="list-row">
               <span>{d.nom} <span style={{ color: 'var(--text-3)', fontSize: 12 }}>· {d.nb_pages} pages</span></span>
-              {isSuperadmin && <button className="link-delete" onClick={() => handleDelete(d)}>supprimer</button>}
+              <button className="link-delete" onClick={() => handleDelete(d)}>supprimer</button>
             </div>
           ))}
-          {isSuperadmin && (
+          {(
             <div>
               <label className="btn-secondary" style={{ cursor: uploading ? 'wait' : 'pointer', display: 'inline-block' }}>
                 {uploading ? 'Import en cours…' : 'Ajouter des PDF'}
@@ -157,6 +160,7 @@ export function RevisionPage() {
           )}
         </div>
       </Card>
+      )}
     </div>
   );
 }

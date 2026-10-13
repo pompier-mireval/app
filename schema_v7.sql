@@ -37,3 +37,10 @@ $$;
 
 revoke execute on function public.search_revision_pages(text[], int) from public, anon, authenticated;
 grant execute on function public.search_revision_pages(text[], int) to service_role;
+
+-- Les agents n'ont pas à voir la liste des documents : seul le superadmin
+-- les gère (la fonction chat-revision lit la base avec la clé service).
+drop policy if exists "lecture revision_documents" on revision_documents;
+drop policy if exists "lecture revision_documents superadmin" on revision_documents;
+-- (la policy "ecriture revision_documents superadmin" de schema_v6.sql, de
+-- type "for all", couvre aussi la lecture pour le superadmin)
