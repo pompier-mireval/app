@@ -103,7 +103,6 @@ ${corpus}`;
   // permissif : les modèles de série 3 utilisent thinkingLevel, les 2.x
   // thinkingBudget, et un modèle qui refuse un réglage répond 400.
   const THINKING: (Record<string, unknown> | null)[] = [
-    { thinkingLevel: 'minimal' },
     { thinkingLevel: 'low' },
     { thinkingBudget: 0 },
     null,
