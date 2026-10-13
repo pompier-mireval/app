@@ -53,8 +53,8 @@ export function RevisionPage() {
     setQuestion('');
     setAsking(true);
     try {
-      const answer = await askRevision(q, history);
-      setMessages((prev) => [...prev, { role: 'bot', text: answer }]);
+      const { answer, sources } = await askRevision(q, history);
+      setMessages((prev) => [...prev, { role: 'bot', text: answer, sources }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Le chatbot est indisponible.');
     } finally {
@@ -75,7 +75,7 @@ export function RevisionPage() {
           setError(`« ${file.name} » ne contient aucun texte (PDF scanné ?) — il ne peut pas être utilisé.`);
           continue;
         }
-        await addRevisionDocument(file.name.replace(/\.pdf$/i, ''), pages);
+        await addRevisionDocument(file.name.replace(/\.pdf$/i, ''), pages, file);
         showToast(`« ${file.name} » ajouté (${pages.length} pages).`);
       }
       setDocs(await fetchRevisionDocuments());
@@ -122,7 +122,7 @@ export function RevisionPage() {
                 border: '1px solid var(--border)',
               }}
             >
-              {m.role === 'user' ? m.text : <ChatText text={m.text} />}
+              {m.role === 'user' ? m.text : <ChatText text={m.text} sources={m.sources} />}
             </div>
           ))}
           {asking && <div style={{ fontSize: 13, color: 'var(--text-3)' }}>Recherche dans les documents…</div>}
