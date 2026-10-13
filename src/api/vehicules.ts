@@ -38,8 +38,13 @@ export async function fetchAllPostesCompetences(): Promise<PosteCompetenceLink[]
 
 // Réservé superadmin (policy RLS)
 export async function createVehicule(input: Pick<Vehicule, 'nom' | 'immatriculation' | 'type'>): Promise<Vehicule> {
-  const { data: dernier } = await supabase.from('vehicules').select('ordre').order('ordre', { ascending: false }).limit(1).maybeSingle();
-  const { data, error } = await supabase.from('vehicules').insert({ ...input, ordre: (dernier?.ordre ?? 0) + 1 }).select().single();
+  const { data: dernier } = await supabase.from('vehicules').select('ordre, ordre_generation').order('ordre', { ascending: false }).limit(1).maybeSingle();
+  const { data: dernierGen } = await supabase.from('vehicules').select('ordre_generation').order('ordre_generation', { ascending: false }).limit(1).maybeSingle();
+  const { data, error } = await supabase
+    .from('vehicules')
+    .insert({ ...input, ordre: (dernier?.ordre ?? 0) + 1, ordre_generation: (dernierGen?.ordre_generation ?? 0) + 1 })
+    .select()
+    .single();
   if (error) throw error;
   return data as Vehicule;
 }
@@ -55,6 +60,13 @@ export async function updateVehicule(
 // Réservé superadmin : réécrit l'ordre de tous les véhicules selon la liste fournie.
 export async function saveVehiculesOrder(idsInOrder: string[]): Promise<void> {
   const results = await Promise.all(idsInOrder.map((id, i) => supabase.from('vehicules').update({ ordre: i + 1 }).eq('id', id)));
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+}
+
+// Réservé superadmin : ordre de remplissage de la génération automatique.
+export async function saveVehiculesGenerationOrder(idsInOrder: string[]): Promise<void> {
+  const results = await Promise.all(idsInOrder.map((id, i) => supabase.from('vehicules').update({ ordre_generation: i + 1 }).eq('id', id)));
   const failed = results.find((r) => r.error);
   if (failed?.error) throw failed.error;
 }

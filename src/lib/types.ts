@@ -43,6 +43,7 @@ export interface Vehicule {
   type: string | null;
   statut: string;
   ordre: number;
+  ordre_generation: number;
   created_by: string | null;
   created_at: string;
 }

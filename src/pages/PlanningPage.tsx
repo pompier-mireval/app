@@ -298,13 +298,14 @@ export function PlanningPage() {
       for (const a of affectations) charge.set(a.agent_id, (charge.get(a.agent_id) ?? 0) + 1);
 
       const dispoSemaine = await fetchDisponibilitesForRange(weekStart, weekEnd);
+      const vehiculesParGeneration = [...vehicules].sort((a, b) => a.ordre_generation - b.ordre_generation || a.nom.localeCompare(b.nom));
       const nouvelles: { agentId: string; posteId: string; date: string; creneauTypeId?: string; heureDebutPerso?: string; heureFinPerso?: string }[] = [];
 
       for (const day of weekDays) {
         const dejaAffectesCeJour = new Set(affectations.filter((a) => a.date === day).map((a) => a.agent_id));
         for (const nouv of nouvelles.filter((n) => n.date === day)) dejaAffectesCeJour.add(nouv.agentId);
 
-        for (const vehicule of vehicules) {
+        for (const vehicule of vehiculesParGeneration) {
           // Un agent ne peut être qu'une seule fois sur un même engin le
           // même jour (deux postes différents du même véhicule) — c'est un
           // vrai blocage, contrairement à la préférence entre véhicules.

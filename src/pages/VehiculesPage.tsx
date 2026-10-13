@@ -12,6 +12,7 @@ import {
   removePosteCompetence,
   fetchAllPostesCompetences,
   saveVehiculesOrder,
+  saveVehiculesGenerationOrder,
 } from '../api/vehicules';
 import { fetchCompetences } from '../api/competences';
 import type { Vehicule, PosteVehicule, Competence } from '../lib/types';
@@ -85,6 +86,23 @@ export function VehiculesPage() {
     }
   }
 
+  const parGeneration = [...vehicules].sort((a, b) => a.ordre_generation - b.ordre_generation || a.nom.localeCompare(b.nom));
+
+  async function handleMoveGeneration(index: number, delta: -1 | 1) {
+    const j = index + delta;
+    if (j < 0 || j >= parGeneration.length) return;
+    const ids = parGeneration.map((v) => v.id);
+    [ids[index], ids[j]] = [ids[j], ids[index]];
+    setVehicules((prev) => prev.map((v) => ({ ...v, ordre_generation: ids.indexOf(v.id) + 1 })));
+    try {
+      await saveVehiculesGenerationOrder(ids);
+    } catch (err) {
+      console.error(err);
+      setError("Impossible d'enregistrer l'ordre de génération.");
+      load();
+    }
+  }
+
   if (loading) return <Spinner />;
 
   return (
@@ -103,6 +121,26 @@ export function VehiculesPage() {
           <Button onClick={handleCreate}>Créer</Button>
         </div>
       </Card>
+
+      {parGeneration.length > 1 && (
+        <Card>
+          <strong>Ordre de remplissage (génération automatique)</strong>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', margin: '2px 0 8px' }}>
+            Le premier véhicule de la liste est rempli en premier, avec les agents les moins chargés.
+          </div>
+          <div className="stack-sm">
+            {parGeneration.map((v, i) => (
+              <div key={v.id} className="list-row">
+                <span>{i + 1}. {v.nom}</span>
+                <span style={{ display: 'flex', gap: 10 }}>
+                  <button className="link-edit" disabled={i === 0} onClick={() => handleMoveGeneration(i, -1)} aria-label="Monter">▲</button>
+                  <button className="link-edit" disabled={i === parGeneration.length - 1} onClick={() => handleMoveGeneration(i, 1)} aria-label="Descendre">▼</button>
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {vehicules.map((v, i) => (
         <VehiculeCard
