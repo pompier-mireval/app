@@ -151,3 +151,37 @@ export interface DemandeHabillement {
   created_at: string;
   traite_at: string | null;
 }
+
+export interface InventaireItem {
+  id: string;
+  vehicule_id: string;
+  zone: string;
+  nom: string;
+  quantite: number;
+  ordre: number;
+}
+
+export interface InventaireControle {
+  id: string;
+  vehicule_id: string;
+  agent_id: string;
+  nb_items: number;
+  created_at: string;
+}
+
+export interface InventaireManque {
+  id: string;
+  controle_id: string;
+  vehicule_id: string;
+  agent_id: string;
+  item_id: string | null;
+  zone: string;
+  item_nom: string;
+  quantite_attendue: number;
+  quantite_constatee: number;
+  probleme: 'manquant' | 'defectueux';
+  commentaire: string | null;
+  statut: 'a_traiter' | 'regle';
+  created_at: string;
+  regle_at: string | null;
+}
