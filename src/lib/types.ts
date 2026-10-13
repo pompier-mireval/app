@@ -42,6 +42,7 @@ export interface Vehicule {
   immatriculation: string | null;
   type: string | null;
   statut: string;
+  ordre: number;
   created_by: string | null;
   created_at: string;
 }

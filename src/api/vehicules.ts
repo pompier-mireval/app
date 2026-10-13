@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabaseClient';
 import type { Vehicule, PosteVehicule } from '../lib/types';
 
 export async function fetchVehicules(): Promise<Vehicule[]> {
-  const { data, error } = await supabase.from('vehicules').select('*').order('nom');
+  const { data, error } = await supabase.from('vehicules').select('*').order('ordre').order('nom');
   if (error) throw error;
   return data as Vehicule[];
 }
@@ -38,7 +38,8 @@ export async function fetchAllPostesCompetences(): Promise<PosteCompetenceLink[]
 
 // Réservé superadmin (policy RLS)
 export async function createVehicule(input: Pick<Vehicule, 'nom' | 'immatriculation' | 'type'>): Promise<Vehicule> {
-  const { data, error } = await supabase.from('vehicules').insert(input).select().single();
+  const { data: dernier } = await supabase.from('vehicules').select('ordre').order('ordre', { ascending: false }).limit(1).maybeSingle();
+  const { data, error } = await supabase.from('vehicules').insert({ ...input, ordre: (dernier?.ordre ?? 0) + 1 }).select().single();
   if (error) throw error;
   return data as Vehicule;
 }
@@ -49,6 +50,13 @@ export async function updateVehicule(
 ): Promise<void> {
   const { error } = await supabase.from('vehicules').update(input).eq('id', id);
   if (error) throw error;
+}
+
+// Réservé superadmin : réécrit l'ordre de tous les véhicules selon la liste fournie.
+export async function saveVehiculesOrder(idsInOrder: string[]): Promise<void> {
+  const results = await Promise.all(idsInOrder.map((id, i) => supabase.from('vehicules').update({ ordre: i + 1 }).eq('id', id)));
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
 }
 
 // Supprime le véhicule et, en cascade (définie en base), ses postes et

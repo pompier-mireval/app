@@ -11,6 +11,7 @@ import {
   addPosteCompetence,
   removePosteCompetence,
   fetchAllPostesCompetences,
+  saveVehiculesOrder,
 } from '../api/vehicules';
 import { fetchCompetences } from '../api/competences';
 import type { Vehicule, PosteVehicule, Competence } from '../lib/types';
@@ -69,6 +70,21 @@ export function VehiculesPage() {
     }
   }
 
+  async function handleMove(index: number, delta: -1 | 1) {
+    const j = index + delta;
+    if (j < 0 || j >= vehicules.length) return;
+    const ids = vehicules.map((v) => v.id);
+    [ids[index], ids[j]] = [ids[j], ids[index]];
+    setVehicules(ids.map((id) => vehicules.find((v) => v.id === id)!));
+    try {
+      await saveVehiculesOrder(ids);
+    } catch (err) {
+      console.error(err);
+      setError("Impossible d'enregistrer l'ordre des véhicules.");
+      load();
+    }
+  }
+
   if (loading) return <Spinner />;
 
   return (
@@ -88,9 +104,12 @@ export function VehiculesPage() {
         </div>
       </Card>
 
-      {vehicules.map((v) => (
+      {vehicules.map((v, i) => (
         <VehiculeCard
           key={v.id}
+          onMove={(delta) => handleMove(i, delta)}
+          canMoveUp={i > 0}
+          canMoveDown={i < vehicules.length - 1}
           vehicule={v}
           competences={competences}
           postes={postesByVehicule[v.id] ?? []}
@@ -110,9 +129,12 @@ interface VehiculeCardProps {
   postesCompetences: PosteCompetenceLink[];
   onChanged: () => void;
   onError: (msg: string) => void;
+  onMove: (delta: -1 | 1) => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }
 
-function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChanged, onError }: VehiculeCardProps) {
+function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChanged, onError, onMove, canMoveUp, canMoveDown }: VehiculeCardProps) {
   const { showToast } = useToast();
   const [nomPoste, setNomPoste] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
@@ -219,6 +241,8 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
           </div>
         ) : (
           <div>
+            <button className="link-edit" disabled={!canMoveUp} onClick={() => onMove(-1)} aria-label="Monter" title="Monter">▲</button>{' '}
+            <button className="link-edit" disabled={!canMoveDown} onClick={() => onMove(1)} aria-label="Descendre" title="Descendre">▼</button>{' '}
             <strong>{vehicule.nom}</strong>{' '}
             <button className="link-edit" onClick={() => setEditingVehicule(true)}>modifier</button>{' '}
             <button className="link-delete" onClick={handleDeleteVehicule}>supprimer</button>
