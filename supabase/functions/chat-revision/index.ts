@@ -94,7 +94,7 @@ ${corpus}`;
   ];
 
   const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-3.8-flash';
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  const callGemini = () => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': Deno.env.get('GEMINI_API_KEY')! },
     body: JSON.stringify({
@@ -103,9 +103,18 @@ ${corpus}`;
       generationConfig: { temperature: 0.2 },
     }),
   });
+
+  // Le modèle gratuit est parfois saturé (503) : on réessaie un peu avant d'abandonner.
+  let res = await callGemini();
+  for (const delaiMs of [2000, 5000]) {
+    if (res.status !== 503) break;
+    await new Promise((r) => setTimeout(r, delaiMs));
+    res = await callGemini();
+  }
   if (!res.ok) {
     const detail = await res.text();
     console.error('Gemini', res.status, detail);
+    if (res.status === 503) return json({ error: 'Le service d\'IA est surchargé, réessaie dans quelques instants.' }, 502);
     if (res.status === 429) return json({ error: 'Limite gratuite atteinte, réessaie dans une minute.' }, 502);
     let msg = '';
     try { msg = JSON.parse(detail)?.error?.message ?? ''; } catch { /* corps non JSON */ }
