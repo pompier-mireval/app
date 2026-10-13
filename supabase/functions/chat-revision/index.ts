@@ -3,7 +3,7 @@
 // l'API Gemini (offre gratuite de Google AI Studio). Les pages envoyées sont
 // choisies par recherche plein texte (schema_v7.sql).
 //
-// Secrets : supabase secrets set GEMINI_API_KEY=...   (optionnel : GEMINI_MODEL=gemini-3.8-flash)
+// Secrets : supabase secrets set ANTHROPIC_API_KEY=...   (optionnel : ANTHROPIC_MODEL=claude-haiku-5-5)
 // Déploiement : supabase functions deploy chat-revision
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
