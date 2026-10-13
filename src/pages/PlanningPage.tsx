@@ -47,6 +47,8 @@ export function PlanningPage() {
   // Lecture ouverte à tous (dispos y compris) ; seuls admin/superadmin
   // peuvent modifier — aligné sur ce qu'autorisent les policies RLS.
   const canEdit = agent?.niveau_acces === 'admin' || agent?.niveau_acces === 'superadmin';
+  // Le choix des gardes de la semaine est réservé au superadmin.
+  const canEditGardes = agent?.niveau_acces === 'superadmin';
   const [viewMode, setViewMode] = useState<'jour' | 'semaine'>('semaine');
   const [horaireMode, setHoraireMode] = useState<'jour' | 'nuit'>('jour');
   const [date, setDate] = useState(todayIso());
@@ -451,7 +453,7 @@ export function PlanningPage() {
 
         {viewMode === 'semaine' && canEdit && (
           <div className="field-row" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-            {bloc.type === 'semaine' ? (
+            {canEditGardes && (bloc.type === 'semaine' ? (
               <>
                 <Field label="Garde de jour (Lun-Ven, fixe)">
                   <select className="input" value={gardeJourId} onChange={(e) => handleChangeGardeSemaine('jour', e.target.value)}>
@@ -479,7 +481,7 @@ export function PlanningPage() {
                   ))}
                 </select>
               </Field>
-            )}
+            ))}
             <Button onClick={handleAutoGenerate} disabled={generating}>
               {generating
                 ? genProgress
