@@ -24,8 +24,9 @@ function words(s: string): string[] {
   return [...new Set(all)].slice(0, 20);
 }
 
-const NB_PAGES = 25; // pages les plus pertinentes envoyées au modèle
-const NB_VOISINES = 3; // pour les meilleures, on ajoute aussi la page avant/après
+const NB_PAGES = 8; // pages les plus pertinentes envoyées au modèle
+const NB_VOISINES = 1; // pour la meilleure, on ajoute aussi la page avant/après
+const MAX_CHARS_PAGE = 3000; // une page plus longue est coupée
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const question = String(body.question ?? '').trim().slice(0, 1000);
   if (!question) return json({ error: 'Question vide' }, 400);
-  const history: { role: 'user' | 'bot'; text: string }[] = Array.isArray(body.history) ? body.history.slice(-6) : [];
+  const history: { role: 'user' | 'bot'; text: string }[] = Array.isArray(body.history) ? body.history.slice(-2) : [];
 
   const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   // Seul un agent connu et actif peut interroger le chatbot.
@@ -121,7 +122,7 @@ Deno.serve(async (req) => {
   const ordonnees = [...retenues.values()].sort((x, y) => (nomDoc.get(x.document_id) ?? '').localeCompare(nomDoc.get(y.document_id) ?? '') || x.page - y.page);
   const idPage = new Map<string, Page>(ordonnees.map((p, i) => [`S${i + 1}`, p]));
   const corpus = ordonnees
-    .map((p, i) => `=== [S${i + 1}] ${nomDoc.get(p.document_id)} — page ${p.page} ===\n${p.contenu}`)
+    .map((p, i) => `=== [S${i + 1}] ${nomDoc.get(p.document_id)} — page ${p.page} ===\n${p.contenu.slice(0, MAX_CHARS_PAGE)}`)
     .join('\n\n');
 
   const system = `Tu es un assistant de révision pour des sapeurs-pompiers. Tu réponds EXCLUSIVEMENT d'après les extraits de documents ci-dessous, jamais d'après tes connaissances générales.
