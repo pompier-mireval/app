@@ -3,7 +3,7 @@
 // l'API Gemini (offre gratuite de Google AI Studio). Les pages envoyées sont
 // choisies par recherche plein texte (schema_v7.sql).
 //
-// Secrets : supabase secrets set GEMINI_API_KEY=...   (optionnel : GEMINI_MODEL=gemini-2.5-flash)
+// Secrets : supabase secrets set GEMINI_API_KEY=...   (optionnel : GEMINI_MODEL=gemini-3.8-flash)
 // Déploiement : supabase functions deploy chat-revision
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
@@ -93,7 +93,7 @@ ${corpus}`;
     { role: 'user', parts: [{ text: question }] },
   ];
 
-  const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-2.5-flash';
+  const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-3.8-flash';
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': Deno.env.get('GEMINI_API_KEY')! },
