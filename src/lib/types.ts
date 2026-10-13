@@ -106,3 +106,20 @@ export interface GardeSemaine {
   created_at: string;
 }
 
+
+export interface Astreinte {
+  id: string;
+  agent_id: string;
+  date: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+// Ligne unique (id = 1) — voir schema_v4.sql.
+export interface AstreinteConfig {
+  id: number;
+  nb_max: number;
+  competence_ca_id: string | null;
+  competence_conducteur_id: string | null;
+  competence_equipier_id: string | null;
+}

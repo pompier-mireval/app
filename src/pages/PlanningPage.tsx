@@ -23,6 +23,7 @@ import {
   gardeBlocCalendarDays,
   gardeBlocLabel,
 } from '../lib/dates';
+import { AstreintePanel } from '../components/planning/AstreintePanel';
 import { AgentLink } from '../components/ui/AgentLink';
 import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Button, Status, Modal } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
@@ -479,6 +480,10 @@ export function PlanningPage() {
           </div>
         )}
       </Card>
+
+      {viewMode === 'jour' && horaireMode === 'jour' && (
+        <AstreintePanel date={date} agents={agents} agentCompetences={agentCompetences} affectations={affectations} canEdit={canEdit} />
+      )}
 
       {viewMode === 'jour' && (
         <Card className="no-print">
