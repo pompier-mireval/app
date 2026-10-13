@@ -152,11 +152,12 @@ export interface DemandeHabillement {
   traite_at: string | null;
 }
 
-export type FamilleControle = 'inventaire' | 'verification';
+export type FamilleControle = 'inventaire' | 'verification' | 'materiel';
 
 export interface InventaireItem {
   id: string;
-  vehicule_id: string;
+  vehicule_id: string | null;
+  materiel_id: string | null;
   zone: string;
   nom: string;
   quantite: number;
@@ -166,7 +167,8 @@ export interface InventaireItem {
 
 export interface InventaireControle {
   id: string;
-  vehicule_id: string;
+  vehicule_id: string | null;
+  materiel_id: string | null;
   agent_id: string;
   nb_items: number;
   created_at: string;
@@ -175,7 +177,8 @@ export interface InventaireControle {
 export interface InventaireManque {
   id: string;
   controle_id: string;
-  vehicule_id: string;
+  vehicule_id: string | null;
+  materiel_id: string | null;
   agent_id: string;
   item_id: string | null;
   zone: string;
@@ -187,4 +190,21 @@ export interface InventaireManque {
   statut: 'a_traiter' | 'regle';
   created_at: string;
   regle_at: string | null;
+}
+
+export interface SignalementBatiment {
+  id: string;
+  agent_id: string;
+  lieu: string;
+  description: string;
+  urgence: 'normale' | 'urgente';
+  statut: 'ouvert' | 'resolu';
+  created_at: string;
+  resolu_at: string | null;
+}
+
+export interface PetitMateriel {
+  id: string;
+  nom: string;
+  created_at: string;
 }

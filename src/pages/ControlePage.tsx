@@ -10,10 +10,13 @@ import {
   createControle,
   fetchControles,
   fetchManques,
+  fetchMateriels,
+  createMateriel,
+  deleteMateriel,
   setManqueStatut,
   type ProblemeInput,
 } from '../api/inventaire';
-import type { Agent, FamilleControle, InventaireControle, InventaireItem, InventaireManque, Vehicule } from '../lib/types';
+import type { PetitMateriel, Agent, FamilleControle, InventaireControle, InventaireItem, InventaireManque, Vehicule } from '../lib/types';
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
@@ -51,6 +54,20 @@ const CONFIG = {
       { v: 'anomalie', l: '⚠️ Anomalie' },
     ],
   },
+  materiel: {
+    titre: 'Petit matériel',
+    sub: "Contrôle un matériel : chaque matériel a ses propres points à valider.",
+    zone: 'Rubrique',
+    zoneEx: 'Ex : Électrique, Mécanique',
+    objet: 'Contrôle à valider',
+    objetEx: 'Ex : État du câble',
+    suivi: 'Suivi des anomalies relevées',
+    quantites: false,
+    etats: [
+      { v: 'ok', l: '✅ OK' },
+      { v: 'anomalie', l: '⚠️ Anomalie' },
+    ],
+  },
 } as const;
 interface Saisie { etat: Etat; quantite: number; commentaire: string }
 
@@ -61,6 +78,11 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
   const isSuperadmin = agent?.niveau_acces === 'superadmin';
   const isAdmin = isSuperadmin || agent?.niveau_acces === 'admin';
   const [vehicules, setVehicules] = useState<Vehicule[]>([]);
+  const [materiels, setMateriels] = useState<PetitMateriel[]>([]);
+  const [nouveauMateriel, setNouveauMateriel] = useState('');
+  const estMateriel = famille === 'materiel';
+  const sujets: { id: string; nom: string }[] = estMateriel ? materiels : vehicules;
+  const sujetOf = (r: { vehicule_id: string | null; materiel_id: string | null }) => r.materiel_id ?? r.vehicule_id ?? '';
   const [agents, setAgents] = useState<Agent[]>([]);
   const [vehiculeId, setVehiculeId] = useState('');
   const [items, setItems] = useState<InventaireItem[]>([]);
@@ -87,9 +109,10 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
   }
 
   useEffect(() => {
-    Promise.all([fetchVehicules(), fetchAgents(), reloadSuivi()])
-      .then(([v, a]) => {
+    Promise.all([fetchVehicules(), fetchAgents(), reloadSuivi(), fetchMateriels()])
+      .then(([v, a, , m]) => {
         setVehicules(v);
+        setMateriels(m);
         setAgents(a);
       })
       .catch(() => setError("Impossible de charger la page Inventaire."))
@@ -105,7 +128,7 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
     const a = agents.find((x) => x.id === id);
     return a ? `${a.prenom} ${a.nom}` : 'Agent inconnu';
   };
-  const vehiculeNom = (id: string) => vehicules.find((v) => v.id === id)?.nom ?? 'Véhicule inconnu';
+  const vehiculeNom = (id: string) => sujets.find((v) => v.id === id)?.nom ?? (estMateriel ? 'Matériel inconnu' : 'Véhicule inconnu');
 
   async function run(action: () => Promise<void>, errMsg: string, rechargeItems = false) {
     setError(null);
@@ -125,7 +148,7 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
     return [...groupes.entries()];
   }, [items]);
 
-  const dernier = controles.find((c) => c.vehicule_id === vehiculeId);
+  const dernier = controles.find((c) => sujetOf(c) === vehiculeId);
   const saisie = (it: InventaireItem): Saisie => saisies[it.id] ?? { etat: 'ok', quantite: 0, commentaire: '' };
   const setSaisie = (it: InventaireItem, patch: Partial<Saisie>) =>
     setSaisies((prev) => ({ ...prev, [it.id]: { ...saisie(it), ...patch } }));
@@ -174,11 +197,42 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
       <PageHeader title={cfg.titre} sub={cfg.sub} />
       {error && <ErrorBanner message={error} />}
 
+      {estMateriel && isSuperadmin && (
+        <Card>
+          <strong>Matériels</strong>
+          <div className="stack-sm" style={{ marginTop: 10 }}>
+            {materiels.map((m) => (
+              <div key={m.id} className="list-row">
+                <span>{m.nom}</span>
+                <button
+                  className="link-delete"
+                  onClick={() => confirmAction(`Supprimer « ${m.nom} » et tous ses contrôles ?`) && run(async () => { await deleteMateriel(m.id); setMateriels(await fetchMateriels()); if (vehiculeId === m.id) setVehiculeId(''); }, 'Impossible de supprimer ce matériel.')}
+                >
+                  supprimer
+                </button>
+              </div>
+            ))}
+            <div className="field-row">
+              <Field label="Ajouter un matériel">
+                <input className="input" maxLength={200} value={nouveauMateriel} onChange={(e) => setNouveauMateriel(e.target.value)} placeholder="Ex : Tronçonneuse, Défibrillateur…" />
+              </Field>
+              <Button
+                variant="secondary"
+                disabled={!nouveauMateriel.trim()}
+                onClick={() => run(async () => { await createMateriel(nouveauMateriel.trim()); setNouveauMateriel(''); setMateriels(await fetchMateriels()); }, "Impossible d'ajouter ce matériel.")}
+              >
+                Ajouter
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <Card accent="brand">
-        <Field label="Véhicule">
+        <Field label={estMateriel ? 'Matériel' : 'Véhicule'}>
           <select className="input" value={vehiculeId} onChange={(e) => setVehiculeId(e.target.value)}>
             <option value="">— choisir —</option>
-            {vehicules.map((v) => <option key={v.id} value={v.id}>{v.nom}</option>)}
+            {sujets.map((v) => <option key={v.id} value={v.id}>{v.nom}</option>)}
           </select>
         </Field>
         {vehiculeId && (
@@ -192,7 +246,7 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
         <Card>
           <strong>Contrôle</strong>
           <div className="stack-sm" style={{ marginTop: 10 }}>
-            {items.length === 0 && <EmptyState>Aucun point défini pour ce véhicule{isSuperadmin ? ' : ajoute-le plus bas.' : '.'}</EmptyState>}
+            {items.length === 0 && <EmptyState>Aucun point défini pour ce {estMateriel ? 'matériel' : 'véhicule'}{isSuperadmin ? ' : ajoute-le plus bas.' : '.'}</EmptyState>}
             {parZone.map(([nomZone, liste]) => (
               <div key={nomZone}>
                 <div style={{ fontWeight: 700, margin: '8px 0 4px' }}>{nomZone}</div>
@@ -254,7 +308,7 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
                   <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{new Date(m.created_at).toLocaleString('fr-FR')}</span>
                 </div>
                 <div style={{ fontSize: 13 }}>
-                  {vehiculeNom(m.vehicule_id)} · {m.zone}
+                  {vehiculeNom(sujetOf(m))} · {m.zone}
                   {cfg.quantites && m.probleme === 'manquant' && m.quantite_attendue > 1 && ` · ${m.quantite_constatee}/${m.quantite_attendue} présent(s)`}
                 </div>
                 {m.commentaire && <p style={{ fontSize: 13, whiteSpace: 'pre-wrap', margin: '4px 0' }}>{m.commentaire}</p>}
@@ -273,7 +327,7 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
 
       {isSuperadmin && vehiculeId && (
         <Card>
-          <strong>Définir {famille === 'inventaire' ? "l'inventaire" : 'les points de vérification'} de {vehiculeNom(vehiculeId)}</strong>
+          <strong>Définir {famille === 'inventaire' ? "l'inventaire" : estMateriel ? 'les contrôles' : 'les points de vérification'} de {vehiculeNom(vehiculeId)}</strong>
           <div className="stack-sm" style={{ marginTop: 10 }}>
             {items.map((it) => (
               <div key={it.id} className="list-row">

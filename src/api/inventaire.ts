@@ -1,11 +1,14 @@
 import { supabase } from '../lib/supabaseClient';
-import type { FamilleControle, InventaireControle, InventaireItem, InventaireManque } from '../lib/types';
+import type { PetitMateriel, FamilleControle, InventaireControle, InventaireItem, InventaireManque } from '../lib/types';
+
+// Colonne qui porte le sujet du contrôle : un véhicule, ou un petit matériel.
+const col = (famille: FamilleControle) => (famille === 'materiel' ? 'materiel_id' : 'vehicule_id');
 
 export async function fetchItems(vehiculeId: string, famille: FamilleControle): Promise<InventaireItem[]> {
   const { data, error } = await supabase
     .from('inventaire_items')
     .select('*')
-    .eq('vehicule_id', vehiculeId)
+    .eq(col(famille), vehiculeId)
     .eq('famille', famille)
     .order('zone')
     .order('ordre')
@@ -18,7 +21,7 @@ export async function fetchItems(vehiculeId: string, famille: FamilleControle): 
 export async function createItem(input: { famille: FamilleControle; vehiculeId: string; zone: string; nom: string; quantite: number; ordre: number }): Promise<void> {
   const { error } = await supabase.from('inventaire_items').insert({
     famille: input.famille,
-    vehicule_id: input.vehiculeId,
+    [col(input.famille)]: input.vehiculeId,
     zone: input.zone,
     nom: input.nom,
     quantite: input.quantite,
@@ -53,7 +56,7 @@ export async function createControle(input: {
 }): Promise<void> {
   const { data, error } = await supabase
     .from('inventaire_controles')
-    .insert({ famille: input.famille, vehicule_id: input.vehiculeId, agent_id: input.agentId, nb_items: input.nbItems })
+    .insert({ famille: input.famille, [col(input.famille)]: input.vehiculeId, agent_id: input.agentId, nb_items: input.nbItems })
     .select('id')
     .single();
   if (error) throw error;
@@ -62,7 +65,7 @@ export async function createControle(input: {
     input.problemes.map((p) => ({
       famille: input.famille,
       controle_id: data.id,
-      vehicule_id: input.vehiculeId,
+      [col(input.famille)]: input.vehiculeId,
       agent_id: input.agentId,
       item_id: p.item.id,
       zone: p.item.zone,
@@ -98,5 +101,22 @@ export async function setManqueStatut(id: string, statut: 'a_traiter' | 'regle')
     .from('inventaire_manques')
     .update({ statut, regle_at: statut === 'regle' ? new Date().toISOString() : null })
     .eq('id', id);
+  if (error) throw error;
+}
+
+export async function fetchMateriels(): Promise<PetitMateriel[]> {
+  const { data, error } = await supabase.from('petit_materiel').select('*').order('nom');
+  if (error) throw error;
+  return data as PetitMateriel[];
+}
+
+// Réservé superadmin (policy RLS)
+export async function createMateriel(nom: string): Promise<void> {
+  const { error } = await supabase.from('petit_materiel').insert({ nom });
+  if (error) throw error;
+}
+
+export async function deleteMateriel(id: string): Promise<void> {
+  const { error } = await supabase.from('petit_materiel').delete().eq('id', id);
   if (error) throw error;
 }
