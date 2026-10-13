@@ -93,63 +93,45 @@ Règles :
 DOCUMENTS :
 ${corpus}`;
 
-  const contents = [
-    ...history.map((m) => ({ role: m.role === 'bot' ? 'model' : 'user', parts: [{ text: String(m.text).slice(0, 4000) }] })),
-    { role: 'user', parts: [{ text: question }] },
-  ];
+  // L'API Anthropic exige des rôles qui alternent en commençant par "user".
+  const messages: { role: 'user' | 'assistant'; content: string }[] = [];
+  for (const m of [...history.map((h) => ({ role: h.role === 'bot' ? 'assistant' : 'user', text: String(h.text).slice(0, 4000) })), { role: 'user', text: question }] as { role: 'user' | 'assistant'; text: string }[]) {
+    const last = messages[messages.length - 1];
+    if (last && last.role === m.role) last.content += `\n${m.text}`;
+    else if (last || m.role === 'user') messages.push({ role: m.role, content: m.text });
+  }
 
-  const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-3.8-flash';
-  // Réglages de "réflexion" à essayer dans l'ordre, du plus rapide au plus
-  // permissif : les modèles de série 3 utilisent thinkingLevel, les 2.x
-  // thinkingBudget, et un modèle qui refuse un réglage répond 400.
-  const THINKING: (Record<string, unknown> | null)[] = [
-    { thinkingLevel: 'low' },
-    { thinkingBudget: 0 },
-    null,
-  ];
-  const callGemini = (thinking: Record<string, unknown> | null, timeoutMs: number) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  const model = Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-haiku-5-5';
+  console.log(`chat-revision recherche ${Date.now() - t0}ms pages=${retenues.size} chars=${corpus.length} modele=${model}`);
+  const callClaude = () => fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': Deno.env.get('GEMINI_API_KEY')! },
-    signal: AbortSignal.timeout(timeoutMs),
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: system }] },
-      contents,
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 800,
-        ...(thinking ? { thinkingConfig: thinking } : {}),
-      },
-    }),
+    headers: { 'Content-Type': 'application/json', 'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!, 'anthropic-version': '2023-06-01' },
+    signal: AbortSignal.timeout(30_000),
+    body: JSON.stringify({ model, max_tokens: 800, temperature: 0.2, system, messages }),
   });
 
-  console.log(`chat-revision recherche ${Date.now() - t0}ms pages=${retenues.size} chars=${corpus.length} modele=${model}`);
-  let res: Response | null = null;
-  for (const thinking of THINKING) {
-    try {
-      res = await callGemini(thinking, 25_000);
-    } catch (e) {
-      console.error('Gemini timeout/erreur', JSON.stringify(thinking), String(e));
-      return json({ error: "Le service d'IA met trop de temps à répondre. Essaie un autre modèle (secret GEMINI_MODEL)." }, 504);
-    }
-    if (res.status === 503) {
+  let res: Response;
+  try {
+    res = await callClaude();
+    if (res.status === 529 || res.status === 503) {
       await new Promise((r) => setTimeout(r, 1500));
-      res = await callGemini(thinking, 25_000).catch(() => res);
+      res = await callClaude();
     }
-    if (res && res.status !== 400) break; // 400 = réglage refusé : on essaie le suivant
-    console.log('Gemini 400 avec', JSON.stringify(thinking), await res!.clone().text());
+  } catch (e) {
+    console.error('Claude timeout/erreur', String(e));
+    return json({ error: "Le service d'IA met trop de temps à répondre, réessaie." }, 504);
   }
-  if (!res) return json({ error: "Le service d'IA a échoué." }, 502);
-  console.log(`chat-revision ${Date.now() - t0}ms pages=${retenues.size} chars=${corpus.length} gemini=${res.status}`);
+  console.log(`chat-revision ${Date.now() - t0}ms pages=${retenues.size} chars=${corpus.length} claude=${res.status}`);
   if (!res.ok) {
     const detail = await res.text();
-    console.error('Gemini', res.status, detail);
-    if (res.status === 503) return json({ error: 'Le service d\'IA est surchargé, réessaie dans quelques instants.' }, 502);
-    if (res.status === 429) return json({ error: 'Limite gratuite atteinte, réessaie dans une minute.' }, 502);
+    console.error('Claude', res.status, detail);
+    if (res.status === 529 || res.status === 503) return json({ error: "Le service d'IA est surchargé, réessaie dans quelques instants." }, 502);
+    if (res.status === 429) return json({ error: 'Trop de demandes, réessaie dans une minute.' }, 502);
     let msg = '';
     try { msg = JSON.parse(detail)?.error?.message ?? ''; } catch { /* corps non JSON */ }
     return json({ error: `Le service d'IA a échoué (${res.status}) ${msg}`.trim().slice(0, 300) }, 502);
   }
   const data = await res.json();
-  const answer = (data.candidates?.[0]?.content?.parts ?? []).map((p: any) => p.text ?? '').join('').trim();
+  const answer = (data.content ?? []).map((b: any) => b.text ?? '').join('').trim();
   return json({ answer: answer || "Je n'ai pas pu formuler de réponse." });
 });
