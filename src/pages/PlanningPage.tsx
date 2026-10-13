@@ -16,6 +16,8 @@ import {
   dayLabel,
   daysAgo,
   gardeBlocOf,
+  mondayOf,
+  addDays,
   nextGardeBloc,
   prevGardeBloc,
   gardeBlocEnd,
@@ -322,6 +324,8 @@ export function PlanningPage() {
                 .filter((a) => !excludeDejaAffectes || !dejaAffectesCeJour.has(a.id))
                 .map((a) => ({ agent: a, dispo: dispoSemaine.find((d) => d.agent_id === a.id && d.date === day) }))
                 .filter((c) => c.dispo)
+                // Garde de jour Lun-Ven : gérée via les astreintes, pas les véhicules.
+                .filter((c) => !(bloc.type === 'semaine' && !isHoraireNuit(c.dispo!, creneaux)))
                 .sort((a, b) => (charge.get(a.agent.id) ?? 0) - (charge.get(b.agent.id) ?? 0));
 
             // On évite d'abord les agents déjà affectés ce jour-là sur un
@@ -380,6 +384,12 @@ export function PlanningPage() {
   }
 
   if (loading) return <Spinner />;
+
+  // Garde de jour (Lun-Ven) : pas d'affectation sur véhicule, on ne gère que
+  // l'astreinte (voir AstreintePanel).
+  const lundi = mondayOf(date);
+  const jourSemaineOuvre = date >= lundi && date <= addDays(lundi, 4);
+  const jourSansVehicule = horaireMode === 'jour' && (viewMode === 'jour' ? jourSemaineOuvre : bloc.type === 'semaine');
 
   const periodeLabel = viewMode === 'jour' ? `Planning du ${date}` : gardeBlocLabel(bloc);
   const nomDe = (id: string) => gardes.find((g) => g.id === id)?.nom;
@@ -481,7 +491,7 @@ export function PlanningPage() {
         )}
       </Card>
 
-      {viewMode === 'jour' && horaireMode === 'jour' && (
+      {viewMode === 'jour' && jourSansVehicule && (
         <AstreintePanel date={date} agents={agents} agentCompetences={agentCompetences} affectations={affectations} canEdit={canEdit} />
       )}
 
@@ -504,7 +514,11 @@ export function PlanningPage() {
         </Card>
       )}
 
-      {viewMode === 'jour' ? (
+      {viewMode === 'semaine' && jourSansVehicule && (
+        <AstreintePanel semaine date={weekStart} agents={agents} agentCompetences={agentCompetences} affectations={[]} canEdit={canEdit} />
+      )}
+
+      {jourSansVehicule ? null : viewMode === 'jour' ? (
         vehicules.map((v) => (
           <Card key={v.id} accent="brand">
             <strong>{v.nom}</strong>

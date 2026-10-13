@@ -12,7 +12,7 @@ import {
   deleteAstreintesForRange,
 } from '../../api/astreintes';
 import type { Agent, AgentCompetence, Affectation, Astreinte, AstreinteConfig, Competence } from '../../lib/types';
-import { addDays, daysAgo, mondayOf } from '../../lib/dates';
+import { addDays, daysAgo, dayLabel, mondayOf } from '../../lib/dates';
 import {
   CATEGORIES,
   NB_MAX_DEFAUT,
@@ -32,15 +32,17 @@ interface Props {
   agentCompetences: AgentCompetence[];
   affectations: Affectation[]; // affectations du jour affiché
   canEdit: boolean;
+  semaine?: boolean; // vue Semaine : les 5 jours côte à côte (date = lundi)
 }
 
 // Aperçu des astreints de la garde de jour (Lun-Ven) pour la date affichée,
 // classés en 3 listes selon leur plus haute compétence, avec génération
 // équilibrée de la semaine (le moins d'astreintes récentes passe en premier).
-export function AstreintePanel({ date, agents, agentCompetences, affectations, canEdit }: Props) {
+export function AstreintePanel({ date, agents, agentCompetences, affectations, canEdit, semaine = false }: Props) {
   const { showToast } = useToast();
   const monday = mondayOf(date);
   const friday = addDays(monday, 4);
+  const jours = [0, 1, 2, 3, 4].map((i) => addDays(monday, i));
   const isWeekday = date >= monday && date <= friday;
 
   const [competences, setCompetences] = useState<Competence[]>([]);
@@ -204,7 +206,7 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
   return (
     <Card accent="brand">
       <div className="field-row" style={{ justifyContent: 'space-between' }}>
-        <strong>Astreinte garde de jour — {duJour.length}/{nbMax}</strong>
+        <strong>Astreinte garde de jour{semaine ? '' : ` — ${duJour.length}/${nbMax}`}</strong>
         {canEdit && (
           <div className="no-print" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             <Button onClick={handleGenerate} disabled={busy}>{busy ? 'En cours…' : 'Générer la semaine'}</Button>
@@ -243,6 +245,44 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
         </div>
       )}
 
+      {semaine ? (
+        <div className="week-grid-scroll" style={{ marginTop: 12 }}>
+          <table className="week-grid">
+            <thead>
+              <tr>
+                <th></th>
+                {jours.map((d) => (
+                  <th key={d}>{dayLabel(d)} ({astreintes.filter((a) => a.date === d && agentById(a.agent_id)).length}/{nbMax})</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {CATEGORIES.map(({ key, label: titre }) => (
+                <tr key={key}>
+                  <td>{titre}</td>
+                  {jours.map((d) => {
+                    const items = astreintes.filter(
+                      (a) => a.date === d && agentById(a.agent_id) && categorieOf(a.agent_id, agentCompetences, comps) === key
+                    );
+                    return (
+                      <td key={d}>
+                        {items.length === 0 ? '—' : items.map((a) => (
+                          <div key={a.id}>
+                            <AgentLink agentId={a.agent_id}>{label(a.agent_id)}</AgentLink>
+                            {canEdit && (
+                              <button className="link-delete no-print" style={{ marginLeft: 6 }} onClick={() => handleRemove(a.id)}>×</button>
+                            )}
+                          </div>
+                        ))}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginTop: 12 }}>
         {parCategorie.map(({ key, titre, items }) => (
           <div key={key}>
@@ -264,6 +304,7 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
           </div>
         ))}
       </div>
+      )}
 
       {sansCategorie.length > 0 && (
         <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 8 }}>
@@ -271,7 +312,7 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
         </p>
       )}
 
-      {canEdit && (
+      {canEdit && !semaine && (
         <div className="field-row no-print" style={{ marginTop: 12 }}>
           <Field label="Ajouter manuellement">
             <select className="input" value={addId} onChange={(e) => setAddId(e.target.value)}>
