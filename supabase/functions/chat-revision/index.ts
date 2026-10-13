@@ -24,8 +24,8 @@ function words(s: string): string[] {
   return [...new Set(all)].slice(0, 20);
 }
 
-const NB_PAGES = 25; // pages les plus pertinentes envoyées au modèle
-const NB_VOISINES = 5; // pour les meilleures, on ajoute aussi la page avant/après
+const NB_PAGES = 12; // pages les plus pertinentes envoyées au modèle
+const NB_VOISINES = 3; // pour les meilleures, on ajoute aussi la page avant/après
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -48,9 +48,14 @@ Deno.serve(async (req) => {
   if (!agent?.actif) return json({ error: 'Accès refusé' }, 403);
 
   const mots = words(question);
-  const { data: hits, error: searchError } = mots.length
-    ? await admin.rpc('search_revision_pages', { mots, nb: NB_PAGES })
+  const t0 = Date.now();
+  // 1) pages contenant tous les mots ; 2) à défaut, au moins un des mots
+  let { data: hits, error: searchError } = mots.length
+    ? await admin.rpc('search_revision_pages', { mots, nb: NB_PAGES, strict: true })
     : { data: [], error: null };
+  if (!searchError && (hits?.length ?? 0) < 4 && mots.length) {
+    ({ data: hits, error: searchError } = await admin.rpc('search_revision_pages', { mots, nb: NB_PAGES, strict: false }));
+  }
   if (searchError) {
     console.error('search', searchError);
     return json({ error: 'La recherche dans les documents a échoué.' }, 500);
@@ -94,23 +99,34 @@ ${corpus}`;
   ];
 
   const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-3.8-flash';
-  const callGemini = () => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  const callGemini = (withThinkingOff: boolean) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': Deno.env.get('GEMINI_API_KEY')! },
+    signal: AbortSignal.timeout(40_000),
     body: JSON.stringify({
       system_instruction: { parts: [{ text: system }] },
       contents,
-      generationConfig: { temperature: 0.2 },
+      // Réponse courte et sans phase de "réflexion" : c'est ce qui rend le bot lent.
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 700,
+        ...(withThinkingOff ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+      },
     }),
   });
 
-  // Le modèle gratuit est parfois saturé (503) : on réessaie un peu avant d'abandonner.
-  let res = await callGemini();
-  for (const delaiMs of [2000, 5000]) {
-    if (res.status !== 503) break;
-    await new Promise((r) => setTimeout(r, delaiMs));
-    res = await callGemini();
+  let res: Response;
+  try {
+    res = await callGemini(true);
+    if (res.status === 400) res = await callGemini(false); // modèle qui n'accepte pas ce réglage
+    if (res.status === 503) {
+      await new Promise((r) => setTimeout(r, 1500));
+      res = await callGemini(true);
+    }
+  } catch (_e) {
+    return json({ error: "Le service d'IA met trop de temps à répondre, réessaie." }, 504);
   }
+  console.log(`chat-revision ${Date.now() - t0}ms pages=${retenues.size} chars=${corpus.length} gemini=${res.status}`);
   if (!res.ok) {
     const detail = await res.text();
     console.error('Gemini', res.status, detail);
