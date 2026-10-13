@@ -99,33 +99,47 @@ ${corpus}`;
   ];
 
   const model = Deno.env.get('GEMINI_MODEL') ?? 'gemini-3.8-flash';
-  const callGemini = (withThinkingOff: boolean) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  // Réglages de "réflexion" à essayer dans l'ordre, du plus rapide au plus
+  // permissif : les modèles de série 3 utilisent thinkingLevel, les 2.x
+  // thinkingBudget, et un modèle qui refuse un réglage répond 400.
+  const THINKING: (Record<string, unknown> | null)[] = [
+    { thinkingLevel: 'minimal' },
+    { thinkingLevel: 'low' },
+    { thinkingBudget: 0 },
+    null,
+  ];
+  const callGemini = (thinking: Record<string, unknown> | null, timeoutMs: number) => fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-goog-api-key': Deno.env.get('GEMINI_API_KEY')! },
-    signal: AbortSignal.timeout(40_000),
+    signal: AbortSignal.timeout(timeoutMs),
     body: JSON.stringify({
       system_instruction: { parts: [{ text: system }] },
       contents,
-      // Réponse courte et sans phase de "réflexion" : c'est ce qui rend le bot lent.
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 700,
-        ...(withThinkingOff ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+        maxOutputTokens: 800,
+        ...(thinking ? { thinkingConfig: thinking } : {}),
       },
     }),
   });
 
-  let res: Response;
-  try {
-    res = await callGemini(true);
-    if (res.status === 400) res = await callGemini(false); // modèle qui n'accepte pas ce réglage
+  console.log(`chat-revision recherche ${Date.now() - t0}ms pages=${retenues.size} chars=${corpus.length} modele=${model}`);
+  let res: Response | null = null;
+  for (const thinking of THINKING) {
+    try {
+      res = await callGemini(thinking, 25_000);
+    } catch (e) {
+      console.error('Gemini timeout/erreur', JSON.stringify(thinking), String(e));
+      return json({ error: "Le service d'IA met trop de temps à répondre. Essaie un autre modèle (secret GEMINI_MODEL)." }, 504);
+    }
     if (res.status === 503) {
       await new Promise((r) => setTimeout(r, 1500));
-      res = await callGemini(true);
+      res = await callGemini(thinking, 25_000).catch(() => res);
     }
-  } catch (_e) {
-    return json({ error: "Le service d'IA met trop de temps à répondre, réessaie." }, 504);
+    if (res && res.status !== 400) break; // 400 = réglage refusé : on essaie le suivant
+    console.log('Gemini 400 avec', JSON.stringify(thinking), await res!.clone().text());
   }
+  if (!res) return json({ error: "Le service d'IA a échoué." }, 502);
   console.log(`chat-revision ${Date.now() - t0}ms pages=${retenues.size} chars=${corpus.length} gemini=${res.status}`);
   if (!res.ok) {
     const detail = await res.text();
