@@ -1,7 +1,7 @@
 // Edge Function Supabase (Deno) — chatbot de révision. Répond à une question
 // uniquement d'après les pages de PDF stockées dans revision_pages, via
-// l'API Gemini (offre gratuite de Google AI Studio). Les pages envoyées sont
-// choisies par recherche plein texte (schema_v7.sql).
+// l'API Claude. Les pages envoyées sont choisies par recherche plein texte
+// (schema_v7.sql), sur les mots de la question élargis par un appel Haiku.
 //
 // Secrets : supabase secrets set ANTHROPIC_API_KEY=...   (optionnel : ANTHROPIC_MODEL=claude-haiku-5-5)
 // Déploiement : supabase functions deploy chat-revision
@@ -24,7 +24,7 @@ function words(s: string): string[] {
   return [...new Set(all)].slice(0, 20);
 }
 
-const NB_PAGES = 12; // pages les plus pertinentes envoyées au modèle
+const NB_PAGES = 25; // pages les plus pertinentes envoyées au modèle
 const NB_VOISINES = 3; // pour les meilleures, on ajoute aussi la page avant/après
 
 Deno.serve(async (req) => {
@@ -47,15 +47,54 @@ Deno.serve(async (req) => {
   const { data: agent } = await admin.from('agents').select('actif').eq('auth_user_id', userData.user.id).maybeSingle();
   if (!agent?.actif) return json({ error: 'Accès refusé' }, 403);
 
-  const mots = words(question);
   const t0 = Date.now();
-  // 1) pages contenant tous les mots ; 2) à défaut, au moins un des mots
-  let { data: hits, error: searchError } = mots.length
-    ? await admin.rpc('search_revision_pages', { mots, nb: NB_PAGES, strict: true })
-    : { data: [], error: null };
-  if (!searchError && (hits?.length ?? 0) < 4 && mots.length) {
-    ({ data: hits, error: searchError } = await admin.rpc('search_revision_pages', { mots, nb: NB_PAGES, strict: false }));
-  }
+  const model = Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-haiku-5-5';
+  const anthropicHeaders = {
+    'Content-Type': 'application/json',
+    'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!,
+    'anthropic-version': '2023-06-01',
+    ...(Deno.env.get('ANTHROPIC_WORKSPACE_ID') ? { 'anthropic-workspace-id': Deno.env.get('ANTHROPIC_WORKSPACE_ID')! } : {}),
+  };
+
+  // Élargit la question : synonymes, sigles et termes techniques que les
+  // documents pourraient employer. En cas d'échec, on garde la question seule.
+  const elargir = async (): Promise<string[]> => {
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: anthropicHeaders,
+        signal: AbortSignal.timeout(8_000),
+        body: JSON.stringify({
+          model,
+          max_tokens: 120,
+          system: "Tu aides une recherche dans des documents de sapeurs-pompiers. À partir de la question, réponds UNIQUEMENT par une liste de 8 à 15 mots-clés séparés par des virgules : termes exacts, synonymes, sigles et leur forme développée (ex. LSPCC, lot de sauvetage et de protection contre les chutes). Aucune phrase.",
+          messages: [{ role: 'user', content: question }],
+        }),
+      });
+      if (!r.ok) return [];
+      const d = await r.json();
+      return words((d.content ?? []).map((b: any) => b.text ?? '').join(' '));
+    } catch (e) {
+      console.error('elargir', String(e));
+      return [];
+    }
+  };
+
+  const motsQuestion = words(question);
+  const extra = await elargir();
+  const motsTous = [...new Set([...motsQuestion, ...extra])].slice(0, 40);
+  const tElargi = Date.now() - t0;
+
+  // 1) pages contenant tous les mots de la question (précis) ; 2) pages
+  // contenant au moins un des mots élargis (large). Les précises passent d'abord.
+  const [strictRes, largeRes] = await Promise.all([
+    motsQuestion.length ? admin.rpc('search_revision_pages', { mots: motsQuestion, nb: NB_PAGES, strict: true }) : { data: [], error: null },
+    motsTous.length ? admin.rpc('search_revision_pages', { mots: motsTous, nb: NB_PAGES, strict: false }) : { data: [], error: null },
+  ]);
+  const searchError = strictRes.error ?? largeRes.error;
+  const fusion = new Map<string, any>();
+  for (const h of [...(strictRes.data ?? []), ...(largeRes.data ?? [])]) fusion.set(`${h.document_id}:${h.page}`, h);
+  const hits = [...fusion.values()].slice(0, NB_PAGES);
   if (searchError) {
     console.error('search', searchError);
     return json({ error: 'La recherche dans les documents a échoué.' }, 500);
@@ -101,16 +140,10 @@ ${corpus}`;
     else if (last || m.role === 'user') messages.push({ role: m.role, content: m.text });
   }
 
-  const model = Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-haiku-5-5';
-  console.log(`chat-revision recherche ${Date.now() - t0}ms pages=${retenues.size} chars=${corpus.length} modele=${model}`);
+  console.log(`chat-revision recherche ${Date.now() - t0}ms (elargi ${tElargi}ms, +${extra.length} mots) pages=${retenues.size} chars=${corpus.length} modele=${model}`);
   const callClaude = () => fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!,
-      'anthropic-version': '2023-06-01',
-      ...(Deno.env.get('ANTHROPIC_WORKSPACE_ID') ? { 'anthropic-workspace-id': Deno.env.get('ANTHROPIC_WORKSPACE_ID')! } : {}),
-    },
+    headers: anthropicHeaders,
     signal: AbortSignal.timeout(30_000),
     body: JSON.stringify({ model, max_tokens: 800, system, messages }),
   });
