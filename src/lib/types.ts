@@ -152,6 +152,8 @@ export interface DemandeHabillement {
   traite_at: string | null;
 }
 
+export type FamilleControle = 'inventaire' | 'verification';
+
 export interface InventaireItem {
   id: string;
   vehicule_id: string;
@@ -159,6 +161,7 @@ export interface InventaireItem {
   nom: string;
   quantite: number;
   ordre: number;
+  famille: FamilleControle;
 }
 
 export interface InventaireControle {
@@ -179,7 +182,7 @@ export interface InventaireManque {
   item_nom: string;
   quantite_attendue: number;
   quantite_constatee: number;
-  probleme: 'manquant' | 'defectueux';
+  probleme: 'manquant' | 'defectueux' | 'anomalie';
   commentaire: string | null;
   statut: 'a_traiter' | 'regle';
   created_at: string;

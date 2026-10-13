@@ -167,6 +167,15 @@ export function IconClipboardCheck(props: IconProps) {
   );
 }
 
+export function IconCheckCircle(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8.5 12.5l2.5 2.5 4.5-5" />
+    </svg>
+  );
+}
+
 export function IconMenu(props: IconProps) {
   return (
     <svg {...base} {...props}>

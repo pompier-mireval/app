@@ -16,6 +16,7 @@ import {
   IconWrench,
   IconBox,
   IconClipboardCheck,
+  IconCheckCircle,
   IconMenu,
 } from '../ui/Icons';
 
@@ -39,6 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/habillement', label: 'Habillement', icon: IconShirt, minNiveau: 'utilisateur' },
   { to: '/mecanique', label: 'Mécanique', icon: IconWrench, minNiveau: 'utilisateur' },
   { to: '/inventaire', label: 'Inventaire', icon: IconBox, minNiveau: 'utilisateur' },
+  { to: '/verification', label: 'Vérification', icon: IconCheckCircle, minNiveau: 'utilisateur' },
   { to: '/revision', label: 'Révision', icon: IconClipboardCheck, minNiveau: 'utilisateur' },
 ];
 

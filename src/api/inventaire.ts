@@ -1,11 +1,12 @@
 import { supabase } from '../lib/supabaseClient';
-import type { InventaireControle, InventaireItem, InventaireManque } from '../lib/types';
+import type { FamilleControle, InventaireControle, InventaireItem, InventaireManque } from '../lib/types';
 
-export async function fetchItems(vehiculeId: string): Promise<InventaireItem[]> {
+export async function fetchItems(vehiculeId: string, famille: FamilleControle): Promise<InventaireItem[]> {
   const { data, error } = await supabase
     .from('inventaire_items')
     .select('*')
     .eq('vehicule_id', vehiculeId)
+    .eq('famille', famille)
     .order('zone')
     .order('ordre')
     .order('nom');
@@ -14,8 +15,9 @@ export async function fetchItems(vehiculeId: string): Promise<InventaireItem[]> 
 }
 
 // Réservé superadmin (policy RLS)
-export async function createItem(input: { vehiculeId: string; zone: string; nom: string; quantite: number; ordre: number }): Promise<void> {
+export async function createItem(input: { famille: FamilleControle; vehiculeId: string; zone: string; nom: string; quantite: number; ordre: number }): Promise<void> {
   const { error } = await supabase.from('inventaire_items').insert({
+    famille: input.famille,
     vehicule_id: input.vehiculeId,
     zone: input.zone,
     nom: input.nom,
@@ -37,12 +39,13 @@ export async function deleteItem(id: string): Promise<void> {
 
 export interface ProblemeInput {
   item: InventaireItem;
-  probleme: 'manquant' | 'defectueux';
+  probleme: 'manquant' | 'defectueux' | 'anomalie';
   quantiteConstatee: number;
   commentaire: string | null;
 }
 
 export async function createControle(input: {
+  famille: FamilleControle;
   vehiculeId: string;
   agentId: string;
   nbItems: number;
@@ -50,13 +53,14 @@ export async function createControle(input: {
 }): Promise<void> {
   const { data, error } = await supabase
     .from('inventaire_controles')
-    .insert({ vehicule_id: input.vehiculeId, agent_id: input.agentId, nb_items: input.nbItems })
+    .insert({ famille: input.famille, vehicule_id: input.vehiculeId, agent_id: input.agentId, nb_items: input.nbItems })
     .select('id')
     .single();
   if (error) throw error;
   if (input.problemes.length === 0) return;
   const { error: mErr } = await supabase.from('inventaire_manques').insert(
     input.problemes.map((p) => ({
+      famille: input.famille,
       controle_id: data.id,
       vehicule_id: input.vehiculeId,
       agent_id: input.agentId,
@@ -75,15 +79,15 @@ export async function createControle(input: {
   }
 }
 
-export async function fetchControles(): Promise<InventaireControle[]> {
-  const { data, error } = await supabase.from('inventaire_controles').select('*').order('created_at', { ascending: false }).limit(300);
+export async function fetchControles(famille: FamilleControle): Promise<InventaireControle[]> {
+  const { data, error } = await supabase.from('inventaire_controles').select('*').eq('famille', famille).order('created_at', { ascending: false }).limit(300);
   if (error) throw error;
   return data as InventaireControle[];
 }
 
 // Admin+ : tous les manquants. Un simple agent ne reçoit que les siens (RLS).
-export async function fetchManques(): Promise<InventaireManque[]> {
-  const { data, error } = await supabase.from('inventaire_manques').select('*').order('created_at', { ascending: false }).limit(300);
+export async function fetchManques(famille: FamilleControle): Promise<InventaireManque[]> {
+  const { data, error } = await supabase.from('inventaire_manques').select('*').eq('famille', famille).order('created_at', { ascending: false }).limit(300);
   if (error) throw error;
   return data as InventaireManque[];
 }

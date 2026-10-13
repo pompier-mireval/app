@@ -12,7 +12,7 @@ import { GardesPage } from './pages/GardesPage';
 import { VehiculesPage } from './pages/VehiculesPage';
 import { ReferentielsPage } from './pages/ReferentielsPage';
 import { AgentProfilePage } from './pages/AgentProfilePage';
-import { InventairePage } from './pages/InventairePage';
+import { ControlePage } from './pages/ControlePage';
 import { HabillementPage } from './pages/HabillementPage';
 import { MecaniquePage } from './pages/MecaniquePage';
 import { RevisionPage } from './pages/RevisionPage';
@@ -103,7 +103,8 @@ export default function App() {
           <Route path="/agents/:id" element={<AgentProfilePage />} />
           <Route path="/habillement" element={<HabillementPage />} />
           <Route path="/mecanique" element={<MecaniquePage />} />
-          <Route path="/inventaire" element={<InventairePage />} />
+          <Route path="/inventaire" element={<ControlePage key="inventaire" famille="inventaire" />} />
+          <Route path="/verification" element={<ControlePage key="verification" famille="verification" />} />
           <Route path="/revision" element={<RevisionPage />} />
           <Route path="*" element={<Navigate to="/dispos" replace />} />
         </Route>
