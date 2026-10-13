@@ -12,6 +12,7 @@ import { extractPdfPages } from '../lib/pdfText';
 import { Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
+import { ChatText } from '../components/ui/ChatText';
 
 export function RevisionPage() {
   const { agent } = useAuth();
@@ -115,13 +116,13 @@ export function RevisionPage() {
                 maxWidth: '85%',
                 padding: '8px 12px',
                 borderRadius: 10,
-                whiteSpace: 'pre-wrap',
+                whiteSpace: m.role === 'user' ? 'pre-wrap' : undefined,
                 fontSize: 14,
                 background: m.role === 'user' ? 'var(--brand-soft, var(--surface2))' : 'var(--surface2)',
                 border: '1px solid var(--border)',
               }}
             >
-              {m.text}
+              {m.role === 'user' ? m.text : <ChatText text={m.text} />}
             </div>
           ))}
           {asking && <div style={{ fontSize: 13, color: 'var(--text-3)' }}>Recherche dans les documents…</div>}
