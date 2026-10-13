@@ -112,7 +112,7 @@ ${corpus}`;
       ...(Deno.env.get('ANTHROPIC_WORKSPACE_ID') ? { 'anthropic-workspace-id': Deno.env.get('ANTHROPIC_WORKSPACE_ID')! } : {}),
     },
     signal: AbortSignal.timeout(30_000),
-    body: JSON.stringify({ model, max_tokens: 800, temperature: 0.2, system, messages }),
+    body: JSON.stringify({ model, max_tokens: 800, system, messages }),
   });
 
   let res: Response;
