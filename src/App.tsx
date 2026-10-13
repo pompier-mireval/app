@@ -12,6 +12,8 @@ import { GardesPage } from './pages/GardesPage';
 import { VehiculesPage } from './pages/VehiculesPage';
 import { ReferentielsPage } from './pages/ReferentielsPage';
 import { AgentProfilePage } from './pages/AgentProfilePage';
+import { MecaniquePage } from './pages/MecaniquePage';
+import { RevisionPage } from './pages/RevisionPage';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { MentionsLegalesPage } from './pages/legal/MentionsLegalesPage';
 import { ConfidentialitePage } from './pages/legal/ConfidentialitePage';
@@ -99,9 +101,9 @@ export default function App() {
           <Route path="/profil" element={<AgentProfilePage own />} />
           <Route path="/agents/:id" element={<AgentProfilePage />} />
           <Route path="/habillement" element={<ComingSoonPage title="Habillement" />} />
-          <Route path="/mecanique" element={<ComingSoonPage title="Mécanique" />} />
+          <Route path="/mecanique" element={<MecaniquePage />} />
           <Route path="/inventaire" element={<ComingSoonPage title="Inventaire" />} />
-          <Route path="/revision" element={<ComingSoonPage title="Révision" />} />
+          <Route path="/revision" element={<RevisionPage />} />
           <Route path="*" element={<Navigate to="/dispos" replace />} />
         </Route>
       </Routes>

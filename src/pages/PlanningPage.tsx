@@ -482,6 +482,7 @@ export function PlanningPage() {
                 </select>
               </Field>
             ))}
+            {!jourSansVehicule && (
             <Button onClick={handleAutoGenerate} disabled={generating}>
               {generating
                 ? genProgress
@@ -489,6 +490,7 @@ export function PlanningPage() {
                   : 'Génération…'
                 : 'Générer automatiquement'}
             </Button>
+            )}
           </div>
         )}
       </Card>

@@ -123,3 +123,14 @@ export interface AstreinteConfig {
   competence_conducteur_id: string | null;
   competence_equipier_id: string | null;
 }
+
+export interface SignalementMecanique {
+  id: string;
+  vehicule_id: string;
+  agent_id: string;
+  description: string;
+  urgence: 'normale' | 'urgente';
+  statut: 'ouvert' | 'resolu';
+  created_at: string;
+  resolu_at: string | null;
+}
