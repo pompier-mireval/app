@@ -105,7 +105,12 @@ ${corpus}`;
   console.log(`chat-revision recherche ${Date.now() - t0}ms pages=${retenues.size} chars=${corpus.length} modele=${model}`);
   const callClaude = () => fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!, 'anthropic-version': '2023-06-01' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!,
+      'anthropic-version': '2023-06-01',
+      ...(Deno.env.get('ANTHROPIC_WORKSPACE_ID') ? { 'anthropic-workspace-id': Deno.env.get('ANTHROPIC_WORKSPACE_ID')! } : {}),
+    },
     signal: AbortSignal.timeout(30_000),
     body: JSON.stringify({ model, max_tokens: 800, temperature: 0.2, system, messages }),
   });
