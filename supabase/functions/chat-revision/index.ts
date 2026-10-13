@@ -1,6 +1,7 @@
 // Edge Function Supabase (Deno) — chatbot de révision. Répond à une question
 // uniquement d'après les pages de PDF stockées dans revision_pages, via
-// l'API Gemini (offre gratuite de Google AI Studio).
+// l'API Gemini (offre gratuite de Google AI Studio). Les pages envoyées sont
+// choisies par recherche plein texte (schema_v7.sql).
 //
 // Secrets : supabase secrets set GEMINI_API_KEY=...   (optionnel : GEMINI_MODEL=gemini-2.5-flash)
 // Déploiement : supabase functions deploy chat-revision
@@ -15,14 +16,16 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 }
 
-// Budget de texte envoyé au modèle (caractères). Au-delà, on ne garde que
-// les pages les plus proches de la question (recoupement de mots).
-const BUDGET = 400_000;
-
-const STOP = new Set(['le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'en', 'au', 'aux', 'que', 'qui', 'quoi', 'est', 'sont', 'dans', 'sur', 'pour', 'par', 'avec', 'quel', 'quelle', 'quels', 'quelles', 'comment', 'ce', 'cette', 'ces', 'il', 'elle', 'on', 'se', 'sa', 'son', 'ses', 'a']);
+// Mots de la question utilisés pour la recherche plein texte (lettres et
+// chiffres uniquement, ce qui rend la requête to_tsquery sûre).
+const STOP = new Set(['le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et', 'ou', 'en', 'au', 'aux', 'que', 'qui', 'quoi', 'est', 'sont', 'dans', 'sur', 'pour', 'par', 'avec', 'quel', 'quelle', 'quels', 'quelles', 'comment', 'ce', 'cette', 'ces', 'il', 'elle', 'on', 'se', 'sa', 'son', 'ses', 'a', 'quand', 'faut', 'dois']);
 function words(s: string): string[] {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/[^a-z0-9]+/).filter((w) => w.length > 2 && !STOP.has(w));
+  const all = s.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 2 && !STOP.has(w));
+  return [...new Set(all)].slice(0, 20);
 }
+
+const NB_PAGES = 25; // pages les plus pertinentes envoyées au modèle
+const NB_VOISINES = 5; // pour les meilleures, on ajoute aussi la page avant/après
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -44,28 +47,36 @@ Deno.serve(async (req) => {
   const { data: agent } = await admin.from('agents').select('actif').eq('auth_user_id', userData.user.id).maybeSingle();
   if (!agent?.actif) return json({ error: 'Accès refusé' }, 403);
 
-  const { data: docs } = await admin.from('revision_documents').select('id, nom');
-  const { data: pages } = await admin.from('revision_pages').select('document_id, page, contenu').order('document_id').order('page');
-  if (!docs?.length || !pages?.length) return json({ answer: "Aucun document n'a encore été déposé dans Révision." });
-  const nomDoc = new Map(docs.map((d: any) => [d.id, d.nom]));
-
-  let retenues = pages as { document_id: string; page: number; contenu: string }[];
-  if (retenues.reduce((n, p) => n + p.contenu.length, 0) > BUDGET) {
-    const q = new Set(words(question));
-    const scored = retenues
-      .map((p) => ({ p, score: words(p.contenu).filter((w) => q.has(w)).length }))
-      .sort((a, b) => b.score - a.score);
-    let total = 0;
-    const keep = new Set<typeof retenues[number]>();
-    for (const { p } of scored) {
-      if (total + p.contenu.length > BUDGET) continue;
-      keep.add(p);
-      total += p.contenu.length;
-    }
-    retenues = retenues.filter((p) => keep.has(p));
+  const mots = words(question);
+  const { data: hits, error: searchError } = mots.length
+    ? await admin.rpc('search_revision_pages', { mots, nb: NB_PAGES })
+    : { data: [], error: null };
+  if (searchError) {
+    console.error('search', searchError);
+    return json({ error: 'La recherche dans les documents a échoué.' }, 500);
   }
+  if (!hits?.length) return json({ answer: 'Je ne trouve pas cette information dans les documents fournis.' });
 
-  const corpus = retenues.map((p) => `=== [${nomDoc.get(p.document_id)} — page ${p.page}] ===\n${p.contenu}`).join('\n\n');
+  type Page = { document_id: string; page: number; contenu: string };
+  const retenues = new Map<string, Page>();
+  for (const h of hits as Page[]) retenues.set(`${h.document_id}:${h.page}`, h);
+
+  // Pages voisines des meilleurs résultats : une procédure déborde souvent
+  // sur la page suivante.
+  const filtres = (hits as Page[])
+    .slice(0, NB_VOISINES)
+    .map((h) => `and(document_id.eq.${h.document_id},page.in.(${Math.max(1, h.page - 1)},${h.page + 1}))`)
+    .join(',');
+  const { data: voisines } = await admin.from('revision_pages').select('document_id, page, contenu').or(filtres);
+  for (const v of (voisines ?? []) as Page[]) retenues.set(`${v.document_id}:${v.page}`, v);
+
+  const { data: docs } = await admin.from('revision_documents').select('id, nom').in('id', [...new Set([...retenues.values()].map((p) => p.document_id))]);
+  const nomDoc = new Map((docs ?? []).map((d: any) => [d.id, d.nom]));
+
+  const corpus = [...retenues.values()]
+    .sort((x, y) => (nomDoc.get(x.document_id) ?? '').localeCompare(nomDoc.get(y.document_id) ?? '') || x.page - y.page)
+    .map((p) => `=== [${nomDoc.get(p.document_id)} — page ${p.page}] ===\n${p.contenu}`)
+    .join('\n\n');
 
   const system = `Tu es un assistant de révision pour des sapeurs-pompiers. Tu réponds EXCLUSIVEMENT d'après les extraits de documents ci-dessous, jamais d'après tes connaissances générales.
 Règles :
