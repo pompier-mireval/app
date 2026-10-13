@@ -12,6 +12,7 @@ import { GardesPage } from './pages/GardesPage';
 import { VehiculesPage } from './pages/VehiculesPage';
 import { ReferentielsPage } from './pages/ReferentielsPage';
 import { AgentProfilePage } from './pages/AgentProfilePage';
+import { HabillementPage } from './pages/HabillementPage';
 import { MecaniquePage } from './pages/MecaniquePage';
 import { RevisionPage } from './pages/RevisionPage';
 import { ComingSoonPage } from './pages/ComingSoonPage';
@@ -100,7 +101,7 @@ export default function App() {
           />
           <Route path="/profil" element={<AgentProfilePage own />} />
           <Route path="/agents/:id" element={<AgentProfilePage />} />
-          <Route path="/habillement" element={<ComingSoonPage title="Habillement" />} />
+          <Route path="/habillement" element={<HabillementPage />} />
           <Route path="/mecanique" element={<MecaniquePage />} />
           <Route path="/inventaire" element={<ComingSoonPage title="Inventaire" />} />
           <Route path="/revision" element={<RevisionPage />} />

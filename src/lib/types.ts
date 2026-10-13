@@ -136,3 +136,18 @@ export interface SignalementMecanique {
   created_at: string;
   resolu_at: string | null;
 }
+
+export type TypeVetement = 'polo' | 'veste_tsi' | 'pantalon' | 'surpantalon' | 'veste_f1' | 'rangers' | 'autre';
+export type StatutDemandeHabillement = 'en_attente' | 'acceptee' | 'refusee' | 'livree';
+
+export interface DemandeHabillement {
+  id: string;
+  agent_id: string;
+  type: TypeVetement;
+  type_autre: string | null;
+  code: string | null;
+  motif: string;
+  statut: StatutDemandeHabillement;
+  created_at: string;
+  traite_at: string | null;
+}
