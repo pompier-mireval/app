@@ -14,6 +14,9 @@ import {
   createMateriel,
   deleteMateriel,
   setManqueStatut,
+  fetchResponsablesControle,
+  addResponsableControle,
+  removeResponsableControle,
   type ProblemeInput,
 } from '../api/inventaire';
 import type { PetitMateriel, Agent, FamilleControle, InventaireControle, InventaireItem, InventaireManque, Vehicule } from '../lib/types';
@@ -88,6 +91,10 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
   const [items, setItems] = useState<InventaireItem[]>([]);
   const [controles, setControles] = useState<InventaireControle[]>([]);
   const [manques, setManques] = useState<InventaireManque[]>([]);
+  const [responsables, setResponsables] = useState<string[]>([]);
+  const [newResp, setNewResp] = useState('');
+  // Seuls les responsables désignés (et le superadmin qui les désigne) changent les statuts.
+  const canManage = isSuperadmin || (!!agent && responsables.includes(agent.id));
   const [saisies, setSaisies] = useState<Record<string, Saisie>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,9 +107,10 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
   const [edit, setEdit] = useState({ zone: '', nom: '', quantite: 1 });
 
   async function reloadSuivi() {
-    const [c, m] = await Promise.all([fetchControles(famille), fetchManques(famille)]);
+    const [c, m, r] = await Promise.all([fetchControles(famille), fetchManques(famille), fetchResponsablesControle(famille).catch(() => [] as string[])]);
     setControles(c);
     setManques(m);
+    setResponsables(r);
   }
   async function reloadItems(id = vehiculeId) {
     setItems(id ? await fetchItems(id, famille) : []);
@@ -287,7 +295,7 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
         </Card>
       )}
 
-      {isAdmin && (
+      {(isAdmin || canManage) && (
         <Card>
           <strong>{cfg.suivi}</strong>
           <div className="stack-sm" style={{ marginTop: 10 }}>
@@ -309,13 +317,44 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
                 {m.commentaire && <p style={{ fontSize: 13, whiteSpace: 'pre-wrap', margin: '4px 0' }}>{m.commentaire}</p>}
                 <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
                   Signalé par {agentNom(m.agent_id)}
-                  {' · '}
-                  <button className="link-edit" onClick={() => run(() => setManqueStatut(m.id, m.statut === 'a_traiter' ? 'regle' : 'a_traiter'), 'Impossible de mettre à jour le statut.')}>
-                    {m.statut === 'a_traiter' ? 'marquer réglé' : 'rouvrir'}
-                  </button>
+                  {canManage && (
+                    <>
+                      {' · '}
+                      <button className="link-edit" onClick={() => run(() => setManqueStatut(m.id, m.statut === 'a_traiter' ? 'regle' : 'a_traiter'), 'Impossible de mettre à jour le statut.')}>
+                        {m.statut === 'a_traiter' ? 'marquer réglé' : 'rouvrir'}
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
+          </div>
+        </Card>
+      )}
+
+      {isSuperadmin && (
+        <Card>
+          <strong>Responsables (suivi et clôture des anomalies)</strong>
+          <div className="stack-sm" style={{ marginTop: 10 }}>
+            {responsables.length === 0 && <EmptyState>Aucun responsable défini.</EmptyState>}
+            {responsables.map((id) => (
+              <div key={id} className="list-row">
+                <span>{agentNom(id)}</span>
+                <button className="link-delete" onClick={() => run(() => removeResponsableControle(famille, id), 'Impossible de retirer ce responsable.')}>retirer</button>
+              </div>
+            ))}
+            <div className="field-row">
+              <Field label="Ajouter un responsable">
+                <Choice ariaLabel="Agent" value={newResp} onChange={setNewResp} options={agents.filter((a) => !responsables.includes(a.id)).map((a) => ({ value: a.id, label: `${a.prenom} ${a.nom}` }))} />
+              </Field>
+              <Button
+                variant="secondary"
+                disabled={!newResp}
+                onClick={() => run(async () => { await addResponsableControle(famille, newResp); setNewResp(''); }, "Impossible d'ajouter ce responsable.")}
+              >
+                Ajouter
+              </Button>
+            </div>
           </div>
         </Card>
       )}

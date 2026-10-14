@@ -120,3 +120,20 @@ export async function deleteMateriel(id: string): Promise<void> {
   const { error } = await supabase.from('petit_materiel').delete().eq('id', id);
   if (error) throw error;
 }
+
+export async function fetchResponsablesControle(famille: FamilleControle): Promise<string[]> {
+  const { data, error } = await supabase.from('responsables_controle').select('agent_id').eq('famille', famille);
+  if (error) throw error;
+  return (data ?? []).map((r: { agent_id: string }) => r.agent_id);
+}
+
+// Réservé superadmin (policy RLS)
+export async function addResponsableControle(famille: FamilleControle, agentId: string): Promise<void> {
+  const { error } = await supabase.from('responsables_controle').insert({ famille, agent_id: agentId });
+  if (error) throw error;
+}
+
+export async function removeResponsableControle(famille: FamilleControle, agentId: string): Promise<void> {
+  const { error } = await supabase.from('responsables_controle').delete().eq('famille', famille).eq('agent_id', agentId);
+  if (error) throw error;
+}
