@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { LegalLinks } from '../legal/LegalLinks';
+import { PasswordInput } from '../ui/Primitives';
 
 export function AuthScreen() {
   const { sendMagicLink, signInWithPassword } = useAuth();
@@ -98,13 +99,11 @@ export function AuthScreen() {
                 autoComplete={mode === 'mdp' ? 'username' : 'email'}
               />
               {mode === 'mdp' && (
-                <input
-                  type="password"
-                  className="input"
+                <PasswordInput
                   placeholder="Mot de passe"
-                  aria-label="Mot de passe"
+                  ariaLabel="Mot de passe"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={setPassword}
                   autoComplete="current-password"
                 />
               )}

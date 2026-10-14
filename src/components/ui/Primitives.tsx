@@ -242,3 +242,44 @@ export function Choice({ value, onChange, options, emptyLabel, ariaLabel, varian
     </div>
   );
 }
+
+// ---------- Mot de passe avec bouton Afficher / Masquer ----------
+export function PasswordInput({
+  value,
+  onChange,
+  ariaLabel,
+  autoComplete,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  ariaLabel: string;
+  autoComplete?: string;
+  placeholder?: string;
+}) {
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="password-field">
+      <input
+        type={shown ? 'text' : 'password'}
+        className="input"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={ariaLabel}
+        autoComplete={autoComplete}
+        placeholder={placeholder}
+        autoCapitalize="off"
+        spellCheck={false}
+      />
+      <button
+        type="button"
+        className="password-toggle"
+        aria-pressed={shown}
+        aria-label={shown ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+        onClick={() => setShown((s) => !s)}
+      >
+        {shown ? 'Masquer' : 'Afficher'}
+      </button>
+    </div>
+  );
+}

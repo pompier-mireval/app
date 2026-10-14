@@ -6,7 +6,7 @@ import { fetchCompetences, fetchAgentCompetences } from '../api/competences';
 import { fetchGrades } from '../api/grades';
 import { fetchGardesForAgent } from '../api/gardes';
 import type { Agent, Competence, Grade, Garde } from '../lib/types';
-import { Card, ErrorBanner, SuccessBanner, Spinner, Button, PageHeader, Field, Badge, EmptyState } from '../components/ui/Primitives';
+import { Card, ErrorBanner, SuccessBanner, Spinner, Button, PageHeader, Field, Badge, EmptyState, PasswordInput } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 
 interface Props {
@@ -165,10 +165,10 @@ export function AgentProfilePage({ own = false }: Props) {
           <strong style={{ fontSize: 13 }}>Changer le mot de passe</strong>
           <div className="stack-sm" style={{ marginTop: 10, maxWidth: 320 }}>
             <Field label="Nouveau mot de passe">
-              <input type="password" className="input" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              <PasswordInput ariaLabel="Nouveau mot de passe" autoComplete="new-password" value={newPassword} onChange={setNewPassword} />
             </Field>
             <Field label="Confirmer">
-              <input type="password" className="input" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+              <PasswordInput ariaLabel="Confirmer le mot de passe" autoComplete="new-password" value={confirmPassword} onChange={setConfirmPassword} />
             </Field>
             <Button onClick={handleChangePassword}>Mettre à jour</Button>
           </div>

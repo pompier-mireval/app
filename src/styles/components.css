@@ -558,3 +558,15 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
 }
 .skip-link:focus { top: 8px; }
 .main-content:focus { outline: none; }
+
+/* ---------- Mot de passe : bouton Afficher / Masquer dans le champ ---------- */
+.password-field { position: relative; width: 100%; }
+.password-field .input { width: 100%; padding-right: 88px; }
+.password-toggle {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  background: transparent; border: none; border-radius: var(--radius-sm);
+  color: var(--text-2); font-size: 12px; font-weight: 600;
+  padding: 0 12px; min-height: 36px;
+}
+.password-toggle:hover { color: var(--brand-ink); }
+@media (max-width: 700px) { .password-toggle { min-height: 44px; } }
