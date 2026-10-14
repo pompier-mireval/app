@@ -36,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [realAgent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
+  const [agentLoading, setAgentLoading] = useState(false);
   const [rolePreview, setRolePreviewState] = useState<NiveauAcces | null>(
     () => (localStorage.getItem(ROLE_PREVIEW_KEY) as NiveauAcces | null) || null
   );
@@ -76,17 +77,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setAgent((current) => current ?? null);
     };
+    setAgentLoading(true);
     loadingAgent.current = run().finally(() => {
       loadingAgent.current = null;
+      setAgentLoading(false);
     });
     return loadingAgent.current;
   }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       lastUserId = data.session?.user.id ?? null;
       setSession(data.session);
-      if (data.session) loadAgent();
+      // On attend la fiche agent avant de lever `loading` : sans ça, une route
+      // réservée (Véhicules, Agents…) ouverte directement voyait « pas d'agent »
+      // et redirigeait vers Mes dispos avant que l'agent ne soit chargé.
+      if (data.session) await loadAgent();
       setLoading(false);
     });
 
@@ -130,7 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value: AuthContextValue = {
     session,
     agent,
-    loading,
+    // Connexion en cours (session reçue, fiche agent pas encore là) : même état d'attente.
+    loading: loading || (!!session && !realAgent && agentLoading),
     sendMagicLink,
     signInWithPassword,
     updatePassword,
