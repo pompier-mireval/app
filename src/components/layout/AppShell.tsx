@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Topbar } from './Topbar';
 import { Sidebar, BottomNav } from './Nav';
 import { useAuth } from '../../hooks/useAuth';
+import { Spinner } from '../ui/Primitives';
 
 const NIVEAU_LABEL: Record<string, string> = {
   utilisateur: 'Utilisateur',
@@ -34,7 +35,9 @@ export function AppShell() {
         <Sidebar />
         <main className="main-content">
           <div key={location.pathname} className="page-transition">
-            <Outlet />
+            <Suspense fallback={<Spinner />}>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>

@@ -19,7 +19,7 @@ export function Topbar({ darkMode, onToggleDark }: Props) {
     <header className="topbar">
       <div className="topbar-brand">
         <div className="topbar-logo">
-          <img src={`${import.meta.env.BASE_URL}logo.jpg`} alt="Logo" />
+          <img src={`${import.meta.env.BASE_URL}logo-128.webp`} alt="Logo" width="36" height="36" decoding="async" />
         </div>
         <span className="topbar-title">Planning caserne</span>
       </div>
