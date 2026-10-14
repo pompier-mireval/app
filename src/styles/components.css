@@ -516,3 +516,15 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
 @media (min-width: 768px) and (max-height: 820px) {
   .nav-item { padding-top: 7px; padding-bottom: 7px; }
 }
+
+/* ---------- Textes qui se touchent sur mobile ---------- */
+.card-head-line { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; }
+.card-head-arrows, .card-head-actions { display: inline-flex; align-items: center; gap: 8px; }
+.field > .choice-group, .field > .stack-sm { margin-bottom: 6px; }
+
+@media (max-width: 700px) {
+  /* Libellé à gauche + actions à droite : le libellé passe à la ligne au lieu de coller les actions. */
+  .list-row { column-gap: 12px; row-gap: 4px; }
+  .list-row > :first-child:not(:only-child) { flex: 1 1 0; min-width: 0; overflow-wrap: anywhere; }
+  .list-row > :last-child:not(:only-child) { flex-shrink: 0; }
+}

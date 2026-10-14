@@ -270,7 +270,7 @@ export function ReferentielsPage() {
                 </div>
               ) : (
                 <>
-                  <span>{c.nom} <span className="mono">{c.heure_debut}–{c.heure_fin}</span></span>
+                  <span>{c.nom} <span className="mono">{c.heure_debut.slice(0, 5)}–{c.heure_fin.slice(0, 5)}</span></span>
                   <span style={{ display: 'flex', gap: 10 }}>
                     <button className="link-edit" onClick={() => startEditCreneau(c)}>modifier</button>
                     <button className="link-delete" onClick={() => handleDeleteCreneau(c.id)}>supprimer</button>

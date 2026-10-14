@@ -233,7 +233,7 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
           <Choice ariaLabel={estMateriel ? 'Matériel' : 'Véhicule'} value={vehiculeId} onChange={setVehiculeId} options={sujets.map((v) => ({ value: v.id, label: v.nom }))} />
         </Field>
         {vehiculeId && (
-          <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 10 }}>
             {dernier ? `Dernier contrôle : ${new Date(dernier.created_at).toLocaleString('fr-FR')} par ${agentNom(dernier.agent_id)}` : 'Aucun contrôle enregistré.'}
           </div>
         )}

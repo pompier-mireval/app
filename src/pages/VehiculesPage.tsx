@@ -291,11 +291,17 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
           </div>
         ) : (
           <div>
-            <button className="link-edit" disabled={!canMoveUp} onClick={() => onMove(-1)} aria-label="Monter" title="Monter">▲</button>{' '}
-            <button className="link-edit" disabled={!canMoveDown} onClick={() => onMove(1)} aria-label="Descendre" title="Descendre">▼</button>{' '}
-            <strong>{vehicule.nom}</strong>{' '}
-            <button className="link-edit" onClick={() => setEditingVehicule(true)}>modifier</button>{' '}
-            <button className="link-delete" onClick={handleDeleteVehicule}>supprimer</button>
+            <div className="card-head-line">
+              <span className="card-head-arrows">
+                <button className="link-edit" disabled={!canMoveUp} onClick={() => onMove(-1)} aria-label="Monter" title="Monter">▲</button>
+                <button className="link-edit" disabled={!canMoveDown} onClick={() => onMove(1)} aria-label="Descendre" title="Descendre">▼</button>
+              </span>
+              <strong>{vehicule.nom}</strong>
+              <span className="card-head-actions">
+                <button className="link-edit" onClick={() => setEditingVehicule(true)}>modifier</button>
+                <button className="link-delete" onClick={handleDeleteVehicule}>supprimer</button>
+              </span>
+            </div>
             <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{vehicule.type ?? '—'} · {vehicule.statut}</div>
             <label className="checkbox-pill" style={{ marginTop: 6 }}>
               <input type="checkbox" checked={vehicule.dans_planning !== false} onChange={handleTogglePlanning} />

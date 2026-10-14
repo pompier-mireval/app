@@ -181,7 +181,7 @@ interface ChoiceProps {
   compact?: boolean;
 }
 
-export function Choice({ value, onChange, options, emptyLabel, ariaLabel, variant = 'auto', maxPills = 6, placeholder = 'Choisir…', compact = false }: ChoiceProps) {
+export function Choice({ value, onChange, options, emptyLabel, ariaLabel, variant = 'auto', maxPills = 12, placeholder = 'Choisir…', compact = false }: ChoiceProps) {
   const [open, setOpen] = useState(false);
   const [filtre, setFiltre] = useState('');
   const items: ChoiceOption[] = emptyLabel !== undefined ? [{ value: '', label: emptyLabel }, ...options] : options;
@@ -228,6 +228,8 @@ export function Choice({ value, onChange, options, emptyLabel, ariaLabel, varian
   }
 
   if (items.length > maxPills) return <div className="stack-sm">{liste}</div>;
+
+  if (items.length === 0) return <div className="choice-empty">Aucun choix disponible.</div>;
 
   return (
     <div className={compact ? 'choice-group compact' : 'choice-group'} role="radiogroup" aria-label={ariaLabel}>

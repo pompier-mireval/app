@@ -151,7 +151,7 @@ export function RevisionPage() {
         <strong>Documents ({docs.length})</strong>
         <input
           className="input"
-          style={{ marginTop: 10 }}
+          style={{ marginTop: 10, width: '100%' }}
           placeholder="Rechercher un document…"
           aria-label="Rechercher un document"
           value={filtreDocs}

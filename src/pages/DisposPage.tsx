@@ -210,7 +210,7 @@ export function DisposPage() {
                 value={formCreneau}
                 onChange={setFormCreneau}
                 emptyLabel="Personnalisé"
-                options={creneaux.map((c) => ({ value: c.id, label: c.nom, hint: `${c.heure_debut}–${c.heure_fin}` }))}
+                options={creneaux.map((c) => ({ value: c.id, label: c.nom, hint: `${c.heure_debut.slice(0, 5)}–${c.heure_fin.slice(0, 5)}` }))}
               />
             </Field>
             {!formCreneau && (
