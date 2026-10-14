@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { cached } from '../lib/cache';
 import type { Astreinte, AstreinteConfig } from '../lib/types';
 
 export async function fetchAstreintesForRange(from: string, to: string): Promise<Astreinte[]> {
@@ -31,10 +32,12 @@ export async function deleteAstreintesForRange(from: string, to: string): Promis
   if (error) throw error;
 }
 
-export async function fetchAstreinteConfig(): Promise<AstreinteConfig | null> {
-  const { data, error } = await supabase.from('astreinte_config').select('*').eq('id', 1).maybeSingle();
-  if (error) throw error;
-  return data as AstreinteConfig | null;
+export function fetchAstreinteConfig(): Promise<AstreinteConfig | null> {
+  return cached('astreinte_config', async () => {
+    const { data, error } = await supabase.from('astreinte_config').select('*').eq('id', 1).maybeSingle();
+    if (error) throw error;
+    return data as AstreinteConfig | null;
+  });
 }
 
 export async function saveAstreinteConfig(config: Omit<AstreinteConfig, 'id'>): Promise<void> {

@@ -1,10 +1,13 @@
 import { supabase } from '../lib/supabaseClient';
+import { cached } from '../lib/cache';
 import type { Vehicule, PosteVehicule } from '../lib/types';
 
-export async function fetchVehicules(): Promise<Vehicule[]> {
-  const { data, error } = await supabase.from('vehicules').select('*').order('ordre').order('nom');
-  if (error) throw error;
-  return data as Vehicule[];
+export function fetchVehicules(): Promise<Vehicule[]> {
+  return cached('vehicules', async () => {
+    const { data, error } = await supabase.from('vehicules').select('*').order('ordre').order('nom');
+    if (error) throw error;
+    return data as Vehicule[];
+  });
 }
 
 export async function fetchPostesForVehicule(vehiculeId: string): Promise<PosteVehicule[]> {
@@ -19,10 +22,12 @@ export async function fetchPostesForVehicule(vehiculeId: string): Promise<PosteV
 
 // Tous les postes, tous véhicules confondus — utile pour construire la
 // grille de planning sans faire une requête par véhicule.
-export async function fetchAllPostes(): Promise<PosteVehicule[]> {
-  const { data, error } = await supabase.from('postes_vehicule').select('*').order('ordre');
-  if (error) throw error;
-  return data as PosteVehicule[];
+export function fetchAllPostes(): Promise<PosteVehicule[]> {
+  return cached('postes', async () => {
+    const { data, error } = await supabase.from('postes_vehicule').select('*').order('ordre');
+    if (error) throw error;
+    return data as PosteVehicule[];
+  });
 }
 
 export interface PosteCompetenceLink {
@@ -30,10 +35,12 @@ export interface PosteCompetenceLink {
   competence_id: string;
 }
 
-export async function fetchAllPostesCompetences(): Promise<PosteCompetenceLink[]> {
-  const { data, error } = await supabase.from('postes_competences').select('*');
-  if (error) throw error;
-  return data as PosteCompetenceLink[];
+export function fetchAllPostesCompetences(): Promise<PosteCompetenceLink[]> {
+  return cached('postes_competences', async () => {
+    const { data, error } = await supabase.from('postes_competences').select('*');
+    if (error) throw error;
+    return data as PosteCompetenceLink[];
+  });
 }
 
 // Réservé superadmin (policy RLS)

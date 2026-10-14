@@ -1,10 +1,13 @@
 import { supabase } from '../lib/supabaseClient';
+import { cached } from '../lib/cache';
 import type { Competence, AgentCompetence } from '../lib/types';
 
-export async function fetchCompetences(): Promise<Competence[]> {
-  const { data, error } = await supabase.from('competences').select('*').order('nom');
-  if (error) throw error;
-  return data as Competence[];
+export function fetchCompetences(): Promise<Competence[]> {
+  return cached('competences', async () => {
+    const { data, error } = await supabase.from('competences').select('*').order('nom');
+    if (error) throw error;
+    return data as Competence[];
+  });
 }
 
 export async function fetchAgentCompetences(agentId: string): Promise<AgentCompetence[]> {
@@ -18,10 +21,12 @@ export async function fetchAgentCompetences(agentId: string): Promise<AgentCompe
 
 // Toutes les compétences de tous les agents — utile pour la grille de
 // planning (savoir qui est éligible à quel poste sans requête par agent).
-export async function fetchAllAgentCompetences(): Promise<AgentCompetence[]> {
-  const { data, error } = await supabase.from('agent_competences').select('*');
-  if (error) throw error;
-  return data as AgentCompetence[];
+export function fetchAllAgentCompetences(): Promise<AgentCompetence[]> {
+  return cached('agent_competences', async () => {
+    const { data, error } = await supabase.from('agent_competences').select('*');
+    if (error) throw error;
+    return data as AgentCompetence[];
+  });
 }
 
 // Réservé admin/superadmin (policy RLS)

@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState, Fragment } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { fetchVehicules, fetchAllPostes, fetchAllPostesCompetences } from '../api/vehicules';
 import { fetchAgents } from '../api/agents';
-import { fetchAllAgentCompetences } from '../api/competences';
+import { fetchAllAgentCompetences, fetchCompetences } from '../api/competences';
+import { fetchAstreinteConfig } from '../api/astreintes';
 import { fetchAffectationsForDate, fetchAffectationsForRange, createAffectation, deleteAffectation } from '../api/affectations';
 import { fetchCreneauxTypes } from '../api/creneaux';
 import { fetchDisponibilitesForDate, fetchDisponibilitesForRange } from '../api/disponibilites';
-import { fetchGardes } from '../api/gardes';
+import { fetchGardes, fetchAllAgentGardes } from '../api/gardes';
 import { fetchGardeSemainesForDate, setGardeSemaine, clearGardeSemaine } from '../api/gardeSemaines';
 import type { Vehicule, PosteVehicule, Agent, AgentCompetence, Affectation, CreneauType, Disponibilite, Garde, GardeSemaineType } from '../lib/types';
 import type { PosteCompetenceLink } from '../api/vehicules';
@@ -103,6 +104,10 @@ export function PlanningPage() {
 
   useEffect(() => {
     setLoading(true);
+    // Préchauffe le cache pour le panneau d'astreinte (affiché ensuite) : ses
+    // lectures de référence sont alors déjà en vol ou en mémoire, au lieu
+    // de partir seulement une fois le planning chargé.
+    for (const warm of [fetchCompetences, fetchAstreinteConfig, fetchAllAgentGardes]) warm().catch(() => undefined);
     Promise.all([
       fetchVehicules(),
       fetchAllPostes(),

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { cached } from '../lib/cache';
 import type { Agent } from '../lib/types';
 
 // Réservé admin/superadmin (policy RLS) — pré-crée une fiche agent par
@@ -11,13 +12,15 @@ export async function inviteAgent(email: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function fetchAgents(): Promise<Agent[]> {
-  const { data, error } = await supabase
-    .from('agents')
-    .select('*')
-    .order('nom', { ascending: true });
-  if (error) throw error;
-  return data as Agent[];
+export function fetchAgents(): Promise<Agent[]> {
+  return cached('agents', async () => {
+    const { data, error } = await supabase
+      .from('agents')
+      .select('*')
+      .order('nom', { ascending: true });
+    if (error) throw error;
+    return data as Agent[];
+  });
 }
 
 export async function fetchCurrentAgent(): Promise<Agent | null> {

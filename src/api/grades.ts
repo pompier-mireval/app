@@ -1,10 +1,13 @@
 import { supabase } from '../lib/supabaseClient';
+import { cached } from '../lib/cache';
 import type { Grade } from '../lib/types';
 
-export async function fetchGrades(): Promise<Grade[]> {
-  const { data, error } = await supabase.from('grades').select('*').order('ordre');
-  if (error) throw error;
-  return data as Grade[];
+export function fetchGrades(): Promise<Grade[]> {
+  return cached('grades', async () => {
+    const { data, error } = await supabase.from('grades').select('*').order('ordre');
+    if (error) throw error;
+    return data as Grade[];
+  });
 }
 
 // Réservé superadmin (policy RLS) — gestion du référentiel

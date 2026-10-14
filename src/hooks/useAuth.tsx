@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import { fetchCurrentAgent } from '../api/agents';
+import { invalidateCache } from '../lib/cache';
 import type { Agent, NiveauAcces } from '../lib/types';
 
 interface AuthContextValue {
@@ -28,6 +29,8 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 const ROLE_PREVIEW_KEY = 'rolePreview';
+
+let lastUserId: string | null = null;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -65,12 +68,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      lastUserId = data.session?.user.id ?? null;
       setSession(data.session);
       if (data.session) loadAgent();
       setLoading(false);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      // Données filtrées par utilisateur (RLS) : on repart d'un cache vide si ça change.
+      const userId = newSession?.user.id ?? null;
+      if (userId !== lastUserId) {
+        lastUserId = userId;
+        invalidateCache();
+      }
       setSession(newSession);
       if (newSession) loadAgent();
       else setAgent(null);

@@ -1,10 +1,13 @@
 import { supabase } from '../lib/supabaseClient';
+import { cached } from '../lib/cache';
 import type { CreneauType } from '../lib/types';
 
-export async function fetchCreneauxTypes(): Promise<CreneauType[]> {
-  const { data, error } = await supabase.from('creneaux_types').select('*').order('heure_debut');
-  if (error) throw error;
-  return data as CreneauType[];
+export function fetchCreneauxTypes(): Promise<CreneauType[]> {
+  return cached('creneaux', async () => {
+    const { data, error } = await supabase.from('creneaux_types').select('*').order('heure_debut');
+    if (error) throw error;
+    return data as CreneauType[];
+  });
 }
 
 // Réservé superadmin (policy RLS)
