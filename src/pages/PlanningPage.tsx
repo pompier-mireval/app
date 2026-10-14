@@ -499,7 +499,7 @@ export function PlanningPage() {
       </Card>
 
       {viewMode === 'jour' && jourSansVehicule && (
-        <AstreintePanel date={date} agents={agents} agentCompetences={agentCompetences} affectations={affectations} canEdit={canEdit} />
+        <AstreintePanel date={date} agents={agents} agentCompetences={agentCompetences} affectations={affectations} canEdit={canEdit} isSuperAdmin={canEditGardes} />
       )}
 
       {viewMode === 'jour' && (
@@ -522,7 +522,7 @@ export function PlanningPage() {
       )}
 
       {viewMode === 'semaine' && jourSansVehicule && (
-        <AstreintePanel semaine date={weekStart} agents={agents} agentCompetences={agentCompetences} affectations={[]} canEdit={canEdit} />
+        <AstreintePanel semaine date={weekStart} agents={agents} agentCompetences={agentCompetences} affectations={[]} canEdit={canEdit} isSuperAdmin={canEditGardes} />
       )}
 
       {jourSansVehicule ? null : viewMode === 'jour' ? (

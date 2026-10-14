@@ -9,7 +9,6 @@ import {
   saveAstreinteConfig,
   createAstreintes,
   deleteAstreinte,
-  deleteAstreintesForRange,
 } from '../../api/astreintes';
 import type { Agent, AgentCompetence, Affectation, Astreinte, AstreinteConfig, Competence } from '../../lib/types';
 import { addDays, daysAgo, dayLabel, mondayOf } from '../../lib/dates';
@@ -24,7 +23,6 @@ import {
 import { AgentLink } from '../ui/AgentLink';
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field } from '../ui/Primitives';
 import { useToast } from '../ui/Toast';
-import { confirmAction } from '../../lib/confirm';
 
 interface Props {
   date: string;
@@ -32,13 +30,14 @@ interface Props {
   agentCompetences: AgentCompetence[];
   affectations: Affectation[]; // affectations du jour affiché
   canEdit: boolean;
+  isSuperAdmin?: boolean; // seul le superadmin accède aux réglages
   semaine?: boolean; // vue Semaine : les 5 jours côte à côte (date = lundi)
 }
 
 // Aperçu des astreints de la garde de jour (Lun-Ven) pour la date affichée,
 // classés en 3 listes selon leur plus haute compétence, avec génération
 // équilibrée de la semaine (le moins d'astreintes récentes passe en premier).
-export function AstreintePanel({ date, agents, agentCompetences, affectations, canEdit, semaine = false }: Props) {
+export function AstreintePanel({ date, agents, agentCompetences, affectations, canEdit, isSuperAdmin = false, semaine = false }: Props) {
   const { showToast } = useToast();
   const monday = mondayOf(date);
   const friday = addDays(monday, 4);
@@ -157,11 +156,6 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
     }, 'La génération des astreintes a échoué.');
   }
 
-  async function handleReset() {
-    if (!confirmAction('Supprimer toutes les astreintes de cette semaine ?')) return;
-    await run(() => deleteAstreintesForRange(monday, friday), 'Impossible de supprimer les astreintes.');
-  }
-
   async function handleAdd() {
     if (!addId) return;
     await run(async () => {
@@ -209,9 +203,8 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
         <strong>Astreinte garde de jour{semaine ? '' : ` — ${duJour.length}/${nbMax}`}</strong>
         {canEdit && (
           <div className="no-print btn-row">
-            <Button onClick={handleGenerate} disabled={busy}>{busy ? 'En cours…' : 'Générer la semaine'}</Button>
-            <Button variant="secondary" onClick={handleReset} disabled={busy}>Vider la semaine</Button>
-            <Button variant="secondary" onClick={() => setShowConfig((v) => !v)}>Réglages</Button>
+            <Button onClick={handleGenerate} disabled={busy}>{busy ? 'Génération…' : 'Générer automatiquement'}</Button>
+            {isSuperAdmin && <Button variant="secondary" onClick={() => setShowConfig((v) => !v)}>Réglages</Button>}
           </div>
         )}
       </div>
@@ -224,7 +217,7 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
         <EmptyState>Aucune garde de jour définie pour cette semaine (vue Semaine).</EmptyState>
       )}
 
-      {canEdit && showConfig && (
+      {isSuperAdmin && showConfig && (
         <div className="field-row no-print" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
           <Field label="Astreints max par jour">
             <input
