@@ -528,3 +528,16 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
   .list-row > :first-child:not(:only-child) { flex: 1 1 0; min-width: 0; overflow-wrap: anywhere; }
   .list-row > :last-child:not(:only-child) { flex-shrink: 0; }
 }
+
+.choice-empty { padding: 4px 0; }
+.choice-list .choice-empty { padding: 12px; }
+
+/* Pages légales : le tableau (4 colonnes) devient une pile de fiches sur mobile au lieu de déborder. */
+@media (max-width: 600px) {
+  .legal-page table, .legal-page tbody, .legal-page tr, .legal-page td { display: block; width: 100%; }
+  .legal-page thead { position: absolute; left: -9999px; }
+  .legal-page tr { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 10px; padding: 4px 10px; }
+  .legal-page td { border-bottom: none; padding: 6px 0; }
+  .legal-page td::before { content: attr(data-label); display: block; font-size: 11.5px; font-weight: 600; color: var(--text-3); }
+  .legal-page-inner { padding: 20px 16px; }
+}

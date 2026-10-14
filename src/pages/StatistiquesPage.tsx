@@ -142,7 +142,7 @@ export function StatistiquesPage() {
               <div className="stat-bar-fill" style={{ width: `${(nbGardes / maxGardes) * 100}%` }} />
             </div>
             <div className="stat-meta">
-              <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+              <span style={{ fontSize: 11.5, color: 'var(--text-3)', fontFamily: 'var(--font-ui)', flexBasis: '100%' }}>
                 Dernière garde : {derniereDate ? <time dateTime={derniereDate}>{dateLabelFr(derniereDate)}</time> : 'aucune sur la période'}
               </span>
               {parVehicule.map(([nom, count]) => (

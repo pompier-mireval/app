@@ -33,34 +33,34 @@ export function ConfidentialitePage() {
         </thead>
         <tbody>
           <tr>
-            <td>Nom, prénom, email, téléphone, grade</td>
-            <td>Identification, contact entre agents pour l'organisation des gardes</td>
-            <td>Consentement (tu choisis de t'inscrire)</td>
-            <td>Jusqu'à la suppression de ton compte ou ton départ du centre</td>
+            <td data-label="Donnée">Nom, prénom, email, téléphone, grade</td>
+            <td data-label="Finalité">Identification, contact entre agents pour l'organisation des gardes</td>
+            <td data-label="Base légale">Consentement (tu choisis de t'inscrire)</td>
+            <td data-label="Durée de conservation">Jusqu'à la suppression de ton compte ou ton départ du centre</td>
           </tr>
           <tr>
-            <td>Compétences et dates d'obtention</td>
-            <td>Affectation aux gardes/véhicules selon les qualifications</td>
-            <td>Consentement</td>
-            <td>Jusqu'à la suppression de ton compte</td>
+            <td data-label="Donnée">Compétences et dates d'obtention</td>
+            <td data-label="Finalité">Affectation aux gardes/véhicules selon les qualifications</td>
+            <td data-label="Base légale">Consentement</td>
+            <td data-label="Durée de conservation">Jusqu'à la suppression de ton compte</td>
           </tr>
           <tr>
-            <td>Disponibilités et notes de disponibilité</td>
-            <td>Construction du planning de garde</td>
-            <td>Consentement</td>
-            <td>Historique conservé pour les statistiques d'activité</td>
+            <td data-label="Donnée">Disponibilités et notes de disponibilité</td>
+            <td data-label="Finalité">Construction du planning de garde</td>
+            <td data-label="Base légale">Consentement</td>
+            <td data-label="Durée de conservation">Historique conservé pour les statistiques d'activité</td>
           </tr>
           <tr>
-            <td>Affectations aux gardes et véhicules</td>
-            <td>Suivi opérationnel, statistiques d'activité</td>
-            <td>Consentement</td>
-            <td>Historique conservé pour les statistiques d'activité</td>
+            <td data-label="Donnée">Affectations aux gardes et véhicules</td>
+            <td data-label="Finalité">Suivi opérationnel, statistiques d'activité</td>
+            <td data-label="Base légale">Consentement</td>
+            <td data-label="Durée de conservation">Historique conservé pour les statistiques d'activité</td>
           </tr>
           <tr>
-            <td>Email + mot de passe ou lien de connexion</td>
-            <td>Authentification au compte</td>
-            <td>Exécution du service demandé (connexion)</td>
-            <td>Durée du compte</td>
+            <td data-label="Donnée">Email + mot de passe ou lien de connexion</td>
+            <td data-label="Finalité">Authentification au compte</td>
+            <td data-label="Base légale">Exécution du service demandé (connexion)</td>
+            <td data-label="Durée de conservation">Durée du compte</td>
           </tr>
         </tbody>
       </table>
