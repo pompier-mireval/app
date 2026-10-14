@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
 
 export function Card({
@@ -155,5 +155,88 @@ export function Button({
     <button className={variant === 'primary' ? 'btn-primary' : 'btn-secondary'} {...rest}>
       {children}
     </button>
+  );
+}
+
+// ---------- Choix : remplace les menus déroulants ----------
+// Peu d'options  → boutons "pilules" visibles d'un coup (un seul appui).
+// Beaucoup       → liste avec recherche (variant "list", ou auto au-delà de maxPills).
+// variant "sheet" → un bouton montrant la valeur, qui ouvre une fenêtre de choix
+//                  (pour les lignes répétées d'une liste, où une liste ouverte serait trop lourde).
+export interface ChoiceOption {
+  value: string;
+  label: string;
+  hint?: string;
+}
+
+interface ChoiceProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: ChoiceOption[];
+  emptyLabel?: string; // ajoute une option de valeur '' (ex. « Aucun », « Personnalisé »)
+  ariaLabel?: string;
+  variant?: 'auto' | 'sheet';
+  maxPills?: number;
+  placeholder?: string; // sheet : texte du bouton quand rien n'est choisi
+  compact?: boolean;
+}
+
+export function Choice({ value, onChange, options, emptyLabel, ariaLabel, variant = 'auto', maxPills = 6, placeholder = 'Choisir…', compact = false }: ChoiceProps) {
+  const [open, setOpen] = useState(false);
+  const [filtre, setFiltre] = useState('');
+  const items: ChoiceOption[] = emptyLabel !== undefined ? [{ value: '', label: emptyLabel }, ...options] : options;
+  const current = items.find((o) => o.value === value);
+  const pick = (v: string) => {
+    onChange(v);
+    setOpen(false);
+    setFiltre('');
+  };
+
+  const liste = (
+    <>
+      {items.length > 8 && (
+        <input className="input" placeholder="Rechercher…" value={filtre} onChange={(e) => setFiltre(e.target.value)} aria-label="Rechercher" />
+      )}
+      <div className="choice-list" role="listbox" aria-label={ariaLabel}>
+        {items
+          .filter((o) => o.label.toLowerCase().includes(filtre.trim().toLowerCase()))
+          .map((o) => (
+            <button key={o.value} type="button" role="option" aria-selected={o.value === value} className={o.value === value ? 'choice-row active' : 'choice-row'} onClick={() => pick(o.value)}>
+              <span>{o.label}{o.hint && <span className="choice-hint"> · {o.hint}</span>}</span>
+              {o.value === value && <span aria-hidden="true">✓</span>}
+            </button>
+          ))}
+        {items.length === 0 && <div className="choice-empty">Aucun choix disponible.</div>}
+      </div>
+    </>
+  );
+
+  if (variant === 'sheet') {
+    return (
+      <>
+        <button type="button" className="choice-trigger" onClick={() => setOpen(true)} aria-label={ariaLabel} aria-haspopup="dialog">
+          <span>{current?.label ?? placeholder}</span>
+          <span aria-hidden="true">›</span>
+        </button>
+        {open && (
+          <Modal title={ariaLabel ?? 'Choisir'} onClose={() => { setOpen(false); setFiltre(''); }}>
+            <div className="stack-sm">{liste}</div>
+          </Modal>
+        )}
+      </>
+    );
+  }
+
+  if (items.length > maxPills) return <div className="stack-sm">{liste}</div>;
+
+  return (
+    <div className={compact ? 'choice-group compact' : 'choice-group'} role="radiogroup" aria-label={ariaLabel}>
+      {items.map((o) => (
+        <button key={o.value} type="button" role="radio" aria-checked={o.value === value} className={o.value === value ? 'choice-pill active' : 'choice-pill'} onClick={() => onChange(o.value)}>
+          {o.label}
+          {o.hint && <span className="choice-hint"> · {o.hint}</span>}
+        </button>
+      ))}
+    </div>
   );
 }

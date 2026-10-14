@@ -177,6 +177,7 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
   const { showToast } = useToast();
   const [nomPoste, setNomPoste] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
+  const [open, setOpen] = useState(false);
   const [editingVehicule, setEditingVehicule] = useState(false);
   const [editNom, setEditNom] = useState(vehicule.nom);
   const [editType, setEditType] = useState(vehicule.type ?? '');
@@ -304,6 +305,17 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
         )}
       </div>
 
+      <button
+        type="button"
+        className="btn-secondary section-toggle"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span>Postes et compétences ({postes.length})</span>
+        <span aria-hidden="true">{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (<>
       <div className="stack-sm" style={{ marginTop: 12 }}>
         {postes.map((p) => {
           const required = postesCompetences.filter((pc) => pc.poste_id === p.id).map((pc) => pc.competence_id);
@@ -364,6 +376,7 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
         </div>
         <Button onClick={handleAddPoste}>Ajouter le poste</Button>
       </div>
+      </>)}
     </Card>
   );
 }

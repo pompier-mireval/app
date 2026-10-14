@@ -54,6 +54,12 @@ export function dayLabel(dateStr: string): string {
   return d.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: '2-digit' });
 }
 
+// « 12 octobre 2026 » : date lisible, à la place de l'ISO 2026-10-12.
+export function dateLabelFr(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 export function dayLabelLong(dateStr: string): string {
   const d = new Date(`${dateStr}T00:00:00`);
   return d.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' });

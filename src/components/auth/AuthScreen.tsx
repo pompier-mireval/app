@@ -91,7 +91,7 @@ export function AuthScreen() {
               <input
                 type="email"
                 className="input"
-                placeholder="prenom.nom@ta-caserne.fr"
+                placeholder="prenom.nom@sdis34.fr"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"

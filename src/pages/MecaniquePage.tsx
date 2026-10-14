@@ -12,7 +12,7 @@ import {
   removeResponsableMecanique,
 } from '../api/mecanique';
 import type { Vehicule, Agent, SignalementMecanique } from '../lib/types';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner } from '../components/ui/Primitives';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner, Choice } from '../components/ui/Primitives';
 import { AgentLink } from '../components/ui/AgentLink';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
@@ -96,12 +96,12 @@ export function MecaniquePage() {
         <form className="stack-sm" onSubmit={handleSubmit}>
           <strong>Signaler un souci</strong>
           <Field label="Véhicule">
-            <select className="input" value={vehiculeId} onChange={(e) => setVehiculeId(e.target.value)}>
-              <option value="">— choisir —</option>
-              {vehicules.map((v) => (
-                <option key={v.id} value={v.id}>{v.nom}{v.immatriculation ? ` (${v.immatriculation})` : ''}</option>
-              ))}
-            </select>
+            <Choice
+              ariaLabel="Véhicule"
+              value={vehiculeId}
+              onChange={setVehiculeId}
+              options={vehicules.map((v) => ({ value: v.id, label: v.nom, hint: v.immatriculation ?? undefined }))}
+            />
           </Field>
           <Field label="Le souci">
             <textarea
@@ -114,10 +114,7 @@ export function MecaniquePage() {
             />
           </Field>
           <Field label="Urgence">
-            <select className="input" value={urgence} onChange={(e) => setUrgence(e.target.value as 'normale' | 'urgente')}>
-              <option value="normale">Normale</option>
-              <option value="urgente">Urgente (véhicule à l'arrêt)</option>
-            </select>
+            <Choice ariaLabel="Urgence" value={urgence} onChange={(v) => setUrgence(v as 'normale' | 'urgente')} options={[{ value: 'normale', label: 'Normale' }, { value: 'urgente', label: "Urgente (véhicule à l'arrêt)" }]} />
           </Field>
           <div>
             <Button type="submit" disabled={sending}>{sending ? 'Enregistrement…' : 'Enregistrer le signalement'}</Button>
@@ -138,12 +135,7 @@ export function MecaniquePage() {
             ))}
             <div className="field-row">
               <Field label="Ajouter un responsable">
-                <select className="input" value={newResp} onChange={(e) => setNewResp(e.target.value)}>
-                  <option value="">— choisir un agent —</option>
-                  {agents.filter((a) => !responsables.includes(a.id)).map((a) => (
-                    <option key={a.id} value={a.id}>{a.prenom} {a.nom}</option>
-                  ))}
-                </select>
+                <Choice ariaLabel="Agent" value={newResp} onChange={setNewResp} options={agents.filter((a) => !responsables.includes(a.id)).map((a) => ({ value: a.id, label: `${a.prenom} ${a.nom}` }))} />
               </Field>
               <Button
                 variant="secondary"

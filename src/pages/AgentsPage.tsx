@@ -9,7 +9,7 @@ import type { Agent, Competence, AgentCompetence, NiveauAcces, Grade } from '../
 import { scopeAgentsToMyGardes } from '../lib/scope';
 import { useAuth } from '../hooks/useAuth';
 import { AgentLink } from '../components/ui/AgentLink';
-import { Card, ErrorBanner, Spinner, Badge, PageHeader, EmptyState, Button } from '../components/ui/Primitives';
+import { Card, ErrorBanner, Spinner, Badge, PageHeader, EmptyState, Button, Choice } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
 import { IconSearch } from '../components/ui/Icons';
@@ -209,28 +209,9 @@ export function AgentsPage() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <select
-                  className="input"
-                  style={{ fontSize: 12 }}
-                  value={agent.grade_id ?? ''}
-                  onChange={(e) => handleChangeGrade(agent.id, e.target.value)}
-                >
-                  <option value="">Aucun grade</option>
-                  {grades.map((g) => (
-                    <option key={g.id} value={g.id}>{g.nom}</option>
-                  ))}
-                </select>
+                <Choice variant="sheet" ariaLabel="Grade" placeholder="Aucun grade" value={agent.grade_id ?? ''} onChange={(v) => handleChangeGrade(agent.id, v)} emptyLabel="Aucun grade" options={grades.map((g) => ({ value: g.id, label: g.nom }))} />
                 {moi?.niveau_acces === 'superadmin' ? (
-                  <select
-                    className="input"
-                    style={{ fontSize: 12 }}
-                    value={agent.niveau_acces}
-                    onChange={(e) => handleChangeNiveau(agent.id, e.target.value as NiveauAcces)}
-                  >
-                    {NIVEAUX.map((n) => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
+                  <Choice compact ariaLabel="Niveau d'accès" value={agent.niveau_acces} onChange={(v) => handleChangeNiveau(agent.id, v as NiveauAcces)} options={NIVEAUX.map((n) => ({ value: n, label: n }))} />
                 ) : (
                   <Badge tone={toneFor(agent.niveau_acces)}>{agent.niveau_acces}</Badge>
                 )}

@@ -11,7 +11,7 @@ import {
   removeResponsableBatiment,
 } from '../api/batiment';
 import type { Agent, SignalementBatiment } from '../lib/types';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner } from '../components/ui/Primitives';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner, Choice } from '../components/ui/Primitives';
 import { AgentLink } from '../components/ui/AgentLink';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
@@ -105,10 +105,7 @@ export function BatimentPage() {
             />
           </Field>
           <Field label="Urgence">
-            <select className="input" value={urgence} onChange={(e) => setUrgence(e.target.value as 'normale' | 'urgente')}>
-              <option value="normale">Normale</option>
-              <option value="urgente">Urgente (danger ou local inutilisable)</option>
-            </select>
+            <Choice ariaLabel="Urgence" value={urgence} onChange={(v) => setUrgence(v as 'normale' | 'urgente')} options={[{ value: 'normale', label: 'Normale' }, { value: 'urgente', label: "Urgente (danger ou local inutilisable)" }]} />
           </Field>
           <div>
             <Button type="submit" disabled={sending}>{sending ? 'Enregistrement…' : 'Enregistrer le signalement'}</Button>
@@ -129,12 +126,7 @@ export function BatimentPage() {
             ))}
             <div className="field-row">
               <Field label="Ajouter un responsable">
-                <select className="input" value={newResp} onChange={(e) => setNewResp(e.target.value)}>
-                  <option value="">— choisir un agent —</option>
-                  {agents.filter((a) => !responsables.includes(a.id)).map((a) => (
-                    <option key={a.id} value={a.id}>{a.prenom} {a.nom}</option>
-                  ))}
-                </select>
+                <Choice ariaLabel="Agent" value={newResp} onChange={setNewResp} options={agents.filter((a) => !responsables.includes(a.id)).map((a) => ({ value: a.id, label: `${a.prenom} ${a.nom}` }))} />
               </Field>
               <Button
                 variant="secondary"

@@ -27,7 +27,7 @@ import {
 } from '../lib/dates';
 import { AstreintePanel } from '../components/planning/AstreintePanel';
 import { AgentLink } from '../components/ui/AgentLink';
-import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Button, Status, Modal } from '../components/ui/Primitives';
+import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Button, Status, Modal, Choice } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
 import { IconChevronLeft, IconChevronRight } from '../components/ui/Icons';
@@ -449,7 +449,7 @@ export function PlanningPage() {
               </div>
             )}
           </div>
-          <Button variant="secondary" onClick={() => window.print()}>Imprimer</Button>
+          <span className="hide-mobile"><Button variant="secondary" onClick={() => window.print()}>Imprimer</Button></span>
         </div>
 
         {viewMode === 'semaine' && (
@@ -461,30 +461,15 @@ export function PlanningPage() {
             {canEditGardes && (bloc.type === 'semaine' ? (
               <>
                 <Field label="Garde de jour (Lun-Ven, fixe)">
-                  <select className="input" value={gardeJourId} onChange={(e) => handleChangeGardeSemaine('jour', e.target.value)}>
-                    <option value="">— non définie —</option>
-                    {gardes.map((g) => (
-                      <option key={g.id} value={g.id}>{g.nom}</option>
-                    ))}
-                  </select>
+                  <Choice ariaLabel="Garde" value={gardeJourId} onChange={(v) => handleChangeGardeSemaine('jour', v)} emptyLabel="Non définie" options={gardes.map((g) => ({ value: g.id, label: g.nom }))} />
                 </Field>
                 <Field label="Garde de nuit (Lun-Jeu, tourne)">
-                  <select className="input" value={gardeNuitId} onChange={(e) => handleChangeGardeSemaine('nuit', e.target.value)}>
-                    <option value="">— non définie —</option>
-                    {gardes.map((g) => (
-                      <option key={g.id} value={g.id}>{g.nom}</option>
-                    ))}
-                  </select>
+                  <Choice ariaLabel="Garde" value={gardeNuitId} onChange={(v) => handleChangeGardeSemaine('nuit', v)} emptyLabel="Non définie" options={gardes.map((g) => ({ value: g.id, label: g.nom }))} />
                 </Field>
               </>
             ) : (
               <Field label="Garde de week-end (tourne)">
-                <select className="input" value={gardeWeekendId} onChange={(e) => handleChangeGardeSemaine('weekend', e.target.value)}>
-                  <option value="">— non définie —</option>
-                  {gardes.map((g) => (
-                    <option key={g.id} value={g.id}>{g.nom}</option>
-                  ))}
-                </select>
+                <Choice ariaLabel="Garde" value={gardeWeekendId} onChange={(v) => handleChangeGardeSemaine('weekend', v)} emptyLabel="Non définie" options={gardes.map((g) => ({ value: g.id, label: g.nom }))} />
               </Field>
             ))}
             {!jourSansVehicule && (
@@ -671,34 +656,25 @@ export function PlanningPage() {
           {canEdit && (
             <div className="stack-sm" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
               <Field label="Agent">
-                <select
-                  className="input"
+                <Choice
+                  ariaLabel="Agent"
                   value={draftFor(selectedCell.posteId).agentId}
-                  onChange={(e) => updateDraft(selectedCell.posteId, { agentId: e.target.value })}
-                >
-                  <option value="">— choisir —</option>
-                  {eligibleAgents(selectedCell.posteId)
+                  onChange={(v) => updateDraft(selectedCell.posteId, { agentId: v })}
+                  options={eligibleAgents(selectedCell.posteId)
                     .filter((a) => !agentsAlreadyOnVehicule(selectedCell.date, vehiculeIdForPoste(selectedCell.posteId), selectedCell.posteId).has(a.id))
                     .map((a) => ({ a, dispo: dispoOnDay(a.id, selectedCell.date) }))
                     .filter(({ dispo }) => dispo)
-                    .map(({ a, dispo }) => (
-                      <option key={a.id} value={a.id}>
-                        {a.prenom} {a.nom} — dispo {formatHoraire(dispo!, creneaux)}
-                      </option>
-                    ))}
-                </select>
+                    .map(({ a, dispo }) => ({ value: a.id, label: `${a.prenom} ${a.nom}`, hint: `dispo ${formatHoraire(dispo!, creneaux)}` }))}
+                />
               </Field>
               <Field label="Créneau">
-                <select
-                  className="input"
+                <Choice
+                  ariaLabel="Créneau"
                   value={draftFor(selectedCell.posteId).creneauId}
-                  onChange={(e) => updateDraft(selectedCell.posteId, { creneauId: e.target.value })}
-                >
-                  <option value="">Personnalisé</option>
-                  {creneaux.map((c) => (
-                    <option key={c.id} value={c.id}>{c.nom} ({c.heure_debut}–{c.heure_fin})</option>
-                  ))}
-                </select>
+                  onChange={(v) => updateDraft(selectedCell.posteId, { creneauId: v })}
+                  emptyLabel="Personnalisé"
+                  options={creneaux.map((c) => ({ value: c.id, label: c.nom, hint: `${c.heure_debut}–${c.heure_fin}` }))}
+                />
               </Field>
               {!draftFor(selectedCell.posteId).creneauId && (
                 <div className="field-row">

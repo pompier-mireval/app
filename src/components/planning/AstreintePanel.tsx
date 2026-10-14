@@ -21,7 +21,7 @@ import {
   type Candidat,
 } from '../../lib/astreinte';
 import { AgentLink } from '../ui/AgentLink';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field } from '../ui/Primitives';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Choice } from '../ui/Primitives';
 import { useToast } from '../ui/Toast';
 
 interface Props {
@@ -188,12 +188,7 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
 
   const compSelect = (field: 'competence_ca_id' | 'competence_conducteur_id' | 'competence_equipier_id', titre: string, current: string | null) => (
     <Field label={titre}>
-      <select className="input" value={current ?? ''} onChange={(e) => handleSaveConfig({ [field]: e.target.value || null })}>
-        <option value="">— non définie —</option>
-        {competences.map((c) => (
-          <option key={c.id} value={c.id}>{c.nom}</option>
-        ))}
-      </select>
+      <Choice variant="sheet" ariaLabel={titre} placeholder="Non définie" value={current ?? ''} onChange={(v) => handleSaveConfig({ [field]: v || null })} emptyLabel="Non définie" options={competences.map((c) => ({ value: c.id, label: c.nom }))} />
     </Field>
   );
 
@@ -308,12 +303,7 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
       {canEdit && !semaine && (
         <div className="field-row no-print" style={{ marginTop: 12 }}>
           <Field label="Ajouter manuellement">
-            <select className="input" value={addId} onChange={(e) => setAddId(e.target.value)}>
-              <option value="">— choisir un membre de la garde —</option>
-              {candidatsAjout.map((a) => (
-                <option key={a.id} value={a.id}>{a.prenom} {a.nom}</option>
-              ))}
-            </select>
+            <Choice ariaLabel="Membre de la garde" value={addId} onChange={setAddId} options={candidatsAjout.map((a) => ({ value: a.id, label: `${a.prenom} ${a.nom}` }))} />
           </Field>
           <Button variant="secondary" onClick={handleAdd} disabled={busy || !addId}>Ajouter</Button>
         </div>

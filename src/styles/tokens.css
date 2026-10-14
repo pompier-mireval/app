@@ -20,7 +20,7 @@
 
   --text: #14171C;
   --text-2: #474B54;
-  --text-3: #797E88;
+  --text-3: #646973; /* ≥ 4,5:1 sur surface et surface2 (WCAG AA) */
 
   --sidebar-w: 216px;
   --topbar-h: 68px;
@@ -54,5 +54,5 @@
 
   --text: #EDEEF0;
   --text-2: #A7ACB6;
-  --text-3: #6E7480;
+  --text-3: #8E94A1; /* ≥ 4,5:1 sur surface et surface2 (WCAG AA) */
 }

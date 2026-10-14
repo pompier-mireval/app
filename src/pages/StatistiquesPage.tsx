@@ -8,10 +8,10 @@ import type { AgentGardeLink } from '../api/gardes';
 import type { Agent, Vehicule, PosteVehicule, Affectation, Disponibilite } from '../lib/types';
 import { scopeAgentsToMyGardes } from '../lib/scope';
 import { buildPosteVehiculeLookup } from '../lib/format';
-import { todayIso, daysAgo } from '../lib/dates';
+import { todayIso, daysAgo, dateLabelFr } from '../lib/dates';
 import { AgentLink } from '../components/ui/AgentLink';
 import { useAuth } from '../hooks/useAuth';
-import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Badge } from '../components/ui/Primitives';
+import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Badge, Choice } from '../components/ui/Primitives';
 
 const PERIODES = [
   { label: '7 derniers jours', jours: 7 },
@@ -113,12 +113,13 @@ export function StatistiquesPage() {
       {error && <ErrorBanner message={error} />}
 
       <Card>
-        <Field label="Période" style={{ maxWidth: 220 }}>
-          <select className="input" value={periodeJours} onChange={(e) => setPeriodeJours(Number(e.target.value))}>
-            {PERIODES.map((p) => (
-              <option key={p.jours} value={p.jours}>{p.label}</option>
-            ))}
-          </select>
+        <Field label="Période">
+          <Choice
+            ariaLabel="Période"
+            value={String(periodeJours)}
+            onChange={(v) => setPeriodeJours(Number(v))}
+            options={PERIODES.map((p) => ({ value: String(p.jours), label: p.label }))}
+          />
         </Field>
         <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 10 }}>
           {totalGardes} garde{totalGardes !== 1 ? 's' : ''} au total sur la période · en moyenne{' '}
@@ -142,7 +143,7 @@ export function StatistiquesPage() {
             </div>
             <div className="stat-meta">
               <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
-                Dernière garde : {derniereDate ? <time className="mono">{derniereDate}</time> : 'aucune sur la période'}
+                Dernière garde : {derniereDate ? <time dateTime={derniereDate}>{dateLabelFr(derniereDate)}</time> : 'aucune sur la période'}
               </span>
               {parVehicule.map(([nom, count]) => (
                 <Badge key={nom}>{nom} <span className="mono">×{count}</span></Badge>

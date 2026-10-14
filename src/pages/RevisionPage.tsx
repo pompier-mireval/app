@@ -98,6 +98,11 @@ export function RevisionPage() {
     }
   }
 
+  const [filtreDocs, setFiltreDocs] = useState('');
+  const [tousLesDocs, setTousLesDocs] = useState(false);
+  const docsFiltres = docs.filter((d) => d.nom.toLowerCase().includes(filtreDocs.trim().toLowerCase()));
+  const docsAffiches = filtreDocs.trim() || tousLesDocs ? docsFiltres : docsFiltres.slice(0, 8);
+
   if (loading) return <Spinner />;
 
   return (
@@ -144,13 +149,27 @@ export function RevisionPage() {
       {isSuperadmin && (
       <Card>
         <strong>Documents ({docs.length})</strong>
+        <input
+          className="input"
+          style={{ marginTop: 10 }}
+          placeholder="Rechercher un document…"
+          aria-label="Rechercher un document"
+          value={filtreDocs}
+          onChange={(e) => setFiltreDocs(e.target.value)}
+        />
         <div className="stack-sm" style={{ marginTop: 10 }}>
-          {docs.map((d) => (
+          {docsFiltres.length === 0 && <EmptyState>Aucun document ne correspond.</EmptyState>}
+          {docsAffiches.map((d) => (
             <div key={d.id} className="list-row">
               <span>{d.nom} <span style={{ color: 'var(--text-3)', fontSize: 12 }}>· {d.nb_pages} pages</span></span>
               <button className="link-delete" onClick={() => handleDelete(d)}>supprimer</button>
             </div>
           ))}
+          {!filtreDocs.trim() && docsFiltres.length > 8 && (
+            <button type="button" className="btn-secondary" onClick={() => setTousLesDocs((v) => !v)}>
+              {tousLesDocs ? 'Réduire la liste' : `Voir les ${docsFiltres.length - 8} autres documents`}
+            </button>
+          )}
           {(
             <div>
               <label className="btn-secondary" style={{ cursor: uploading ? 'wait' : 'pointer', display: 'inline-block' }}>

@@ -17,7 +17,7 @@ import {
   type ProblemeInput,
 } from '../api/inventaire';
 import type { PetitMateriel, Agent, FamilleControle, InventaireControle, InventaireItem, InventaireManque, Vehicule } from '../lib/types';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner } from '../components/ui/Primitives';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner, Choice } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
 
@@ -230,10 +230,7 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
 
       <Card accent="brand">
         <Field label={estMateriel ? 'Matériel' : 'Véhicule'}>
-          <select className="input" value={vehiculeId} onChange={(e) => setVehiculeId(e.target.value)}>
-            <option value="">— choisir —</option>
-            {sujets.map((v) => <option key={v.id} value={v.id}>{v.nom}</option>)}
-          </select>
+          <Choice ariaLabel={estMateriel ? 'Matériel' : 'Véhicule'} value={vehiculeId} onChange={setVehiculeId} options={sujets.map((v) => ({ value: v.id, label: v.nom }))} />
         </Field>
         {vehiculeId && (
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>
@@ -256,9 +253,7 @@ export function ControlePage({ famille }: { famille: FamilleControle }) {
                     <div key={it.id} style={{ borderTop: '1px solid var(--border)', padding: '6px 0' }}>
                       <div className="list-row" style={{ border: 'none' }}>
                         <span style={{ fontSize: 14 }}>{it.nom}{cfg.quantites && it.quantite > 1 && <span style={{ color: 'var(--text-3)' }}> × {it.quantite}</span>}</span>
-                        <select className="input" style={{ maxWidth: 140 }} value={s.etat} onChange={(e) => setSaisie(it, { etat: e.target.value as Etat })}>
-                          {cfg.etats.map((e) => <option key={e.v} value={e.v}>{e.l}</option>)}
-                        </select>
+                        <Choice compact ariaLabel={`État : ${it.nom}`} value={s.etat} onChange={(v) => setSaisie(it, { etat: v as Etat })} options={cfg.etats.map((e) => ({ value: e.v, label: e.l }))} />
                       </div>
                       {s.etat !== 'ok' && (
                         <div className="field-row" style={{ marginTop: 4 }}>

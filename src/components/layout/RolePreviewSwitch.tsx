@@ -1,10 +1,10 @@
 import { useAuth } from '../../hooks/useAuth';
 import type { NiveauAcces } from '../../lib/types';
 
-const OPTIONS: { value: NiveauAcces; label: string }[] = [
-  { value: 'utilisateur', label: 'Utilisateur' },
-  { value: 'admin', label: 'Admin' },
-  { value: 'superadmin', label: 'Superadmin' },
+const OPTIONS: { value: NiveauAcces; label: string; full: string }[] = [
+  { value: 'utilisateur', label: 'Util.', full: 'Utilisateur' },
+  { value: 'admin', label: 'Admin', full: 'Admin' },
+  { value: 'superadmin', label: 'Super', full: 'Superadmin' },
 ];
 
 // Réservé à un vrai superadmin : lui permet de vérifier ce que voient les
@@ -15,22 +15,23 @@ export function RolePreviewSwitch() {
   const { realNiveauAcces, rolePreview, setRolePreview } = useAuth();
 
   if (realNiveauAcces !== 'superadmin') return null;
+  const current = rolePreview ?? 'superadmin';
 
   return (
-    <select
-      className="input role-preview-select"
-      aria-label="Aperçu de l'application en tant que"
-      value={rolePreview ?? 'superadmin'}
-      onChange={(e) => {
-        const value = e.target.value as NiveauAcces;
-        setRolePreview(value === 'superadmin' ? null : value);
-      }}
-    >
+    <div className="view-toggle role-preview-toggle" role="radiogroup" aria-label="Aperçu de l'application en tant que">
       {OPTIONS.map((o) => (
-        <option key={o.value} value={o.value}>
-          Aperçu : {o.label}
-        </option>
+        <button
+          key={o.value}
+          type="button"
+          role="radio"
+          aria-checked={current === o.value}
+          title={`Aperçu : ${o.full}`}
+          className={current === o.value ? 'view-toggle-btn active' : 'view-toggle-btn'}
+          onClick={() => setRolePreview(o.value === 'superadmin' ? null : o.value)}
+        >
+          {o.label}
+        </button>
       ))}
-    </select>
+    </div>
   );
 }

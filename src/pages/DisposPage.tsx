@@ -6,8 +6,8 @@ import { fetchAffectationsForAgent } from '../api/affectations';
 import { fetchAllPostes, fetchVehicules } from '../api/vehicules';
 import type { CreneauType, Disponibilite, Affectation, PosteVehicule, Vehicule } from '../lib/types';
 import { formatHoraire, buildPosteVehiculeLookup } from '../lib/format';
-import { todayIso, daysAgo, inDays, addDays, mondayOf, weekDaysFrom, dayLabel, dayLabelLong } from '../lib/dates';
-import { Card, ErrorBanner, Spinner, Button, PageHeader, Field, EmptyState, Modal } from '../components/ui/Primitives';
+import { todayIso, daysAgo, inDays, addDays, mondayOf, weekDaysFrom, dayLabel, dayLabelLong, dateLabelFr } from '../lib/dates';
+import { Card, ErrorBanner, Spinner, Button, PageHeader, Field, EmptyState, Modal, Choice } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
 import { IconChevronLeft, IconChevronRight } from '../components/ui/Icons';
@@ -172,7 +172,7 @@ export function DisposPage() {
 
       <Card>
         <div className="field-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <strong style={{ fontSize: 13 }}>Semaine du {weekStart}</strong>
+          <strong style={{ fontSize: 13 }}>Semaine du {dateLabelFr(weekStart)}</strong>
           <div className="btn-row">
             <Button variant="secondary" onClick={() => setWeekAnchor(addDays(weekStart, -7))}>
               <IconChevronLeft /> Précédente
@@ -205,12 +205,13 @@ export function DisposPage() {
         <Modal title={dayLabelLong(selectedDay)} onClose={() => setSelectedDay(null)}>
           <div className="stack-sm">
             <Field label="Créneau">
-              <select className="input" value={formCreneau} onChange={(e) => setFormCreneau(e.target.value)}>
-                <option value="">Personnalisé</option>
-                {creneaux.map((c) => (
-                  <option key={c.id} value={c.id}>{c.nom} ({c.heure_debut}–{c.heure_fin})</option>
-                ))}
-              </select>
+              <Choice
+                ariaLabel="Créneau"
+                value={formCreneau}
+                onChange={setFormCreneau}
+                emptyLabel="Personnalisé"
+                options={creneaux.map((c) => ({ value: c.id, label: c.nom, hint: `${c.heure_debut}–${c.heure_fin}` }))}
+              />
             </Field>
             {!formCreneau && (
               <div className="field-row">
