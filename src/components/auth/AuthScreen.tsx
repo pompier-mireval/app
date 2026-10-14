@@ -65,7 +65,7 @@ export function AuthScreen() {
         <div className="auth-divider" />
 
         {sent ? (
-          <p className="auth-sub">
+          <p className="auth-sub" role="status">
             Un lien de connexion vient de t'être envoyé par email. Clique dessus pour accéder à l'application.
           </p>
         ) : (
@@ -83,7 +83,7 @@ export function AuthScreen() {
                 className={mode === 'mdp' ? 'auth-mode-btn active' : 'auth-mode-btn'}
                 onClick={() => setMode('mdp')}
               >
-                Email + mot de passe
+                Mot de passe
               </button>
             </div>
 
@@ -92,15 +92,17 @@ export function AuthScreen() {
                 type="email"
                 className="input"
                 placeholder="prenom.nom@sdis34.fr"
+                aria-label="Adresse email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
+                autoComplete={mode === 'mdp' ? 'username' : 'email'}
               />
               {mode === 'mdp' && (
                 <input
                   type="password"
                   className="input"
                   placeholder="Mot de passe"
+                  aria-label="Mot de passe"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
@@ -113,15 +115,18 @@ export function AuthScreen() {
                     checked={cguAccepted}
                     onChange={(e) => setCguAccepted(e.target.checked)}
                   />
-                  J'ai lu et j'accepte les{' '}
-                  <a href="#/cgu" target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>CGU</a>{' '}
-                  et la{' '}
-                  <a href="#/confidentialite" target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-                    politique de confidentialité
-                  </a>
+                  {/* Un seul bloc de texte : sans ce <span>, chaque morceau devenait une colonne du flex. */}
+                  <span>
+                    J'ai lu et j'accepte les{' '}
+                    <a href="#/cgu" target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>CGU</a>{' '}
+                    et la{' '}
+                    <a href="#/confidentialite" target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+                      politique de confidentialité
+                    </a>
+                  </span>
                 </label>
               )}
-              {error && <p style={{ color: 'var(--red)', fontSize: 13 }}>{error}</p>}
+              {error && <p role="alert" style={{ color: 'var(--red)', fontSize: 13 }}>{error}</p>}
               <button className="btn-primary" type="submit" disabled={submitting}>
                 {submitting ? 'Connexion…' : mode === 'lien' ? 'Recevoir le lien de connexion' : 'Se connecter'}
               </button>
