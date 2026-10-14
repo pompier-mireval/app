@@ -541,3 +541,11 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
   .legal-page td::before { content: attr(data-label); display: block; font-size: 11.5px; font-weight: 600; color: var(--text-3); }
   .legal-page-inner { padding: 20px 16px; }
 }
+
+/* Barre d'outils du Planning : « Imprimer » reste à droite, sur la même ligne,
+   et ce sont les commandes de gauche qui passent à la ligne si besoin. */
+@media (min-width: 701px) {
+  .planning-toolbar { flex-wrap: nowrap; align-items: flex-start; }
+  .planning-toolbar > .planning-controls { flex: 1 1 0; min-width: 0; }
+  .planning-toolbar > .hide-mobile { flex-shrink: 0; }
+}

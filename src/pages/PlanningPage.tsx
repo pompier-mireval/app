@@ -421,7 +421,7 @@ export function PlanningPage() {
       {error && <ErrorBanner message={error} />}
 
       <Card className="no-print">
-        <div className="field-row" style={{ justifyContent: 'space-between' }}>
+        <div className="field-row planning-toolbar" style={{ justifyContent: 'space-between' }}>
           <div className="field-row planning-controls">
             <div className="toggle-row">
             <div className="view-toggle">

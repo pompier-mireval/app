@@ -1,5 +1,9 @@
 .app { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; background: var(--bg); }
-.app-body { display: flex; flex: 1; overflow: hidden; }
+.app-body { display: flex; flex: 1; overflow: hidden; overflow: clip; }
+/* `overflow: hidden` sur ce conteneur (et sur html/body, voir plus bas) en faisait le
+   « défilement » de référence du menu latéral et de la barre du haut : le
+   `position: sticky` ne collait plus à l'écran (menu décalé vers le bas sur les pages
+   longues, barre du haut qui défile). `clip` rogne pareil sans créer de zone de défilement. */
 
 .topbar {
   height: var(--topbar-h);
@@ -15,6 +19,8 @@
   z-index: 100;
   flex-shrink: 0;
 }
+
+@media (max-width: 767px) { .topbar { position: static; } }
 
 .topbar-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .topbar-logo { width: 40px; height: 40px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -262,7 +268,7 @@
 }
 
 /* ---------- Responsive ---------- */
-html, body { overflow-x: hidden; }
+html, body { overflow-x: hidden; overflow-x: clip; }
 
 @media (max-width: 560px) {
   .main-content { padding: 14px 12px calc(90px + env(safe-area-inset-bottom, 0px)); }
