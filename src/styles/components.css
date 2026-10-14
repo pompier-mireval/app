@@ -417,3 +417,15 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
   from { opacity: 0; transform: translateY(8px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ---------- Rangées de contrôles : une seule ligne, centrées en mobile ---------- */
+.btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.toggle-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+
+@media (max-width: 700px) {
+  .btn-row, .toggle-row { flex-wrap: nowrap; justify-content: center; width: 100%; }
+  .btn-row > * { flex: 1 1 0; min-width: 0; padding-left: 6px; padding-right: 6px; font-size: 12px; white-space: nowrap; }
+  .toggle-row > * { flex: 1 1 0; min-width: 0; }
+  .toggle-row .view-toggle-btn { flex: 1; padding-left: 6px; padding-right: 6px; }
+  .planning-controls { width: 100%; }
+}

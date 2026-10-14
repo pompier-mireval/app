@@ -173,7 +173,7 @@ export function DisposPage() {
       <Card>
         <div className="field-row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <strong style={{ fontSize: 13 }}>Semaine du {weekStart}</strong>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div className="btn-row">
             <Button variant="secondary" onClick={() => setWeekAnchor(addDays(weekStart, -7))}>
               <IconChevronLeft /> Précédente
             </Button>

@@ -208,7 +208,7 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
       <div className="field-row" style={{ justifyContent: 'space-between' }}>
         <strong>Astreinte garde de jour{semaine ? '' : ` — ${duJour.length}/${nbMax}`}</strong>
         {canEdit && (
-          <div className="no-print" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div className="no-print btn-row">
             <Button onClick={handleGenerate} disabled={busy}>{busy ? 'En cours…' : 'Générer la semaine'}</Button>
             <Button variant="secondary" onClick={handleReset} disabled={busy}>Vider la semaine</Button>
             <Button variant="secondary" onClick={() => setShowConfig((v) => !v)}>Réglages</Button>

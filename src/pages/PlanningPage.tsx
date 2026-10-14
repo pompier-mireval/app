@@ -415,7 +415,8 @@ export function PlanningPage() {
 
       <Card className="no-print">
         <div className="field-row" style={{ justifyContent: 'space-between' }}>
-          <div className="field-row">
+          <div className="field-row planning-controls">
+            <div className="toggle-row">
             <div className="view-toggle">
               <button className={viewMode === 'jour' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setViewMode('jour')}>Jour</button>
               <button className={viewMode === 'semaine' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setViewMode('semaine')}>Semaine</button>
@@ -429,12 +430,13 @@ export function PlanningPage() {
                 <button className={horaireMode === 'nuit' ? 'view-toggle-btn active' : 'view-toggle-btn'} onClick={() => setHoraireMode('nuit')}>Nuit</button>
               </div>
             )}
+            </div>
             {viewMode === 'jour' ? (
               <Field label="Date" style={{ maxWidth: 200 }}>
                 <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
               </Field>
             ) : (
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <div className="btn-row">
                 <Button variant="secondary" onClick={() => setDate(prevGardeBloc(bloc).start)}>
                   <IconChevronLeft /> Précédente
                 </Button>
