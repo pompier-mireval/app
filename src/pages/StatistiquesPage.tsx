@@ -143,7 +143,7 @@ export function StatistiquesPage() {
             </div>
             <div className="stat-meta">
               <span style={{ fontSize: 11.5, color: 'var(--text-3)', fontFamily: 'var(--font-ui)', flexBasis: '100%' }}>
-                Dernière garde : {derniereDate ? <time dateTime={derniereDate}>{dateLabelFr(derniereDate)}</time> : 'aucune sur la période'}
+                Dernière garde : {derniereDate ? <time dateTime={derniereDate} style={{ fontFamily: 'inherit' }}>{dateLabelFr(derniereDate)}</time> : 'aucune sur la période'}
               </span>
               {parVehicule.map(([nom, count]) => (
                 <Badge key={nom}>{nom} <span className="mono">×{count}</span></Badge>
