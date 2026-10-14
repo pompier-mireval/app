@@ -44,6 +44,7 @@ export interface Vehicule {
   statut: string;
   ordre: number;
   ordre_generation: number;
+  dans_planning: boolean; // false : absent du planning et de la génération
   created_by: string | null;
   created_at: string;
 }

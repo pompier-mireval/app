@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   fetchVehicules,
   createVehicule,
+  setVehiculeDansPlanning,
   updateVehicule,
   deleteVehicule,
   fetchPostesForVehicule,
@@ -220,6 +221,16 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
     }
   }
 
+  async function handleTogglePlanning() {
+    try {
+      await setVehiculeDansPlanning(vehicule.id, vehicule.dans_planning === false);
+      onChanged();
+    } catch (err) {
+      console.error(err);
+      onError('Impossible de modifier ce véhicule.');
+    }
+  }
+
   async function handleDeleteVehicule() {
     if (!confirmAction(`Supprimer le véhicule "${vehicule.nom}" et tous ses postes ?`)) return;
     try {
@@ -285,6 +296,10 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
             <button className="link-edit" onClick={() => setEditingVehicule(true)}>modifier</button>{' '}
             <button className="link-delete" onClick={handleDeleteVehicule}>supprimer</button>
             <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{vehicule.type ?? '—'} · {vehicule.statut}</div>
+            <label className="checkbox-pill" style={{ marginTop: 6 }}>
+              <input type="checkbox" checked={vehicule.dans_planning !== false} onChange={handleTogglePlanning} />
+              Pris en compte dans le planning
+            </label>
           </div>
         )}
       </div>

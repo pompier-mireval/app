@@ -52,7 +52,9 @@ export function PlanningPage() {
   const [viewMode, setViewMode] = useState<'jour' | 'semaine'>('semaine');
   const [horaireMode, setHoraireMode] = useState<'jour' | 'nuit'>('jour');
   const [date, setDate] = useState(todayIso());
-  const [vehicules, setVehicules] = useState<Vehicule[]>([]);
+  const [tousVehicules, setVehicules] = useState<Vehicule[]>([]);
+  // Un véhicule exclu du planning n'est ni affiché ni rempli automatiquement.
+  const vehicules = useMemo(() => tousVehicules.filter((v) => v.dans_planning !== false), [tousVehicules]);
   const [postes, setPostes] = useState<PosteVehicule[]>([]);
   const [postesCompetences, setPostesCompetences] = useState<PosteCompetenceLink[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
