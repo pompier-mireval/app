@@ -35,17 +35,17 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/dispos', label: 'Mes dispos', icon: IconClock, minNiveau: 'utilisateur' },
   { to: '/planning', label: 'Planning', icon: IconCalendar, minNiveau: 'utilisateur' },
   { to: '/statistiques', label: 'Statistiques', icon: IconBarChart, minNiveau: 'admin' },
-  { to: '/agents', label: 'Agents', icon: IconUsers, minNiveau: 'admin' },
-  { to: '/gardes', label: 'Gardes', icon: IconShield, minNiveau: 'superadmin' },
-  { to: '/vehicules', label: 'Véhicules', icon: IconTruck, minNiveau: 'superadmin' },
-  { to: '/referentiels', label: 'Référentiels', icon: IconSettings, minNiveau: 'superadmin' },
+  { to: '/revision', label: 'Révision', icon: IconClipboardCheck, minNiveau: 'utilisateur' },
   { to: '/habillement', label: 'Habillement', icon: IconShirt, minNiveau: 'utilisateur' },
   { to: '/mecanique', label: 'Mécanique', icon: IconWrench, minNiveau: 'utilisateur' },
   { to: '/inventaire', label: 'Inventaire', icon: IconBox, minNiveau: 'utilisateur' },
   { to: '/batiment', label: 'Bâtiment', icon: IconBuilding, minNiveau: 'utilisateur' },
   { to: '/petit-materiel', label: 'Petit matériel', icon: IconToolbox, minNiveau: 'utilisateur' },
   { to: '/verification', label: 'Vérification', icon: IconCheckCircle, minNiveau: 'utilisateur' },
-  { to: '/revision', label: 'Révision', icon: IconClipboardCheck, minNiveau: 'utilisateur' },
+  { to: '/agents', label: 'Agents', icon: IconUsers, minNiveau: 'admin' },
+  { to: '/gardes', label: 'Gardes', icon: IconShield, minNiveau: 'superadmin' },
+  { to: '/vehicules', label: 'Véhicules', icon: IconTruck, minNiveau: 'superadmin' },
+  { to: '/referentiels', label: 'Référentiels', icon: IconSettings, minNiveau: 'superadmin' },
 ];
 
 // Le bas d'écran mobile n'a de la place que pour quelques onglets — le
