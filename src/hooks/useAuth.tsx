@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import { fetchCurrentAgent } from '../api/agents';
@@ -55,15 +55,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ? { ...realAgent, niveau_acces: rolePreview }
       : realAgent;
 
-  async function loadAgent() {
-    try {
-      const a = await fetchCurrentAgent();
-      setAgent(a);
-    } catch {
-      // L'agent peut ne pas encore exister si l'email n'est pas
-      // reconnu par le trigger de création automatique côté base.
-      setAgent(null);
-    }
+  // Deux déclencheurs au démarrage (getSession et onAuthStateChange) : on
+  // partage la même requête, et un échec ponctuel (réseau, jeton en cours
+  // de renouvellement) ne doit ni effacer un agent déjà chargé ni afficher
+  // « compte non relié » : on réessaie une fois avant d'abandonner.
+  const loadingAgent = useRef<Promise<void> | null>(null);
+
+  function loadAgent(): Promise<void> {
+    if (loadingAgent.current) return loadingAgent.current;
+    const run = async () => {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          setAgent(await fetchCurrentAgent());
+          return;
+        } catch {
+          // L'agent peut ne pas encore exister si l'email n'est pas
+          // reconnu par le trigger de création automatique côté base.
+          if (attempt === 0) await new Promise((r) => setTimeout(r, 600));
+        }
+      }
+      setAgent((current) => current ?? null);
+    };
+    loadingAgent.current = run().finally(() => {
+      loadingAgent.current = null;
+    });
+    return loadingAgent.current;
   }
 
   useEffect(() => {

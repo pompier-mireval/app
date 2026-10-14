@@ -24,13 +24,17 @@ export function fetchAgents(): Promise<Agent[]> {
 }
 
 export async function fetchCurrentAgent(): Promise<Agent | null> {
-  const { data: session } = await supabase.auth.getUser();
-  if (!session.user) return null;
+  // getSession lit la session locale : pas d'aller-retour réseau (getUser en
+  // faisait un à chaque démarrage, deux fois). La sécurité ne repose pas sur
+  // cet identifiant : les policies RLS vérifient le jeton côté serveur.
+  const { data: session } = await supabase.auth.getSession();
+  const user = session.session?.user;
+  if (!user) return null;
 
   const { data, error } = await supabase
     .from('agents')
     .select('*')
-    .eq('auth_user_id', session.user.id)
+    .eq('auth_user_id', user.id)
     .maybeSingle();
   if (error) throw error;
   return data as Agent | null;
