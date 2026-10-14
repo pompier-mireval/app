@@ -5,7 +5,7 @@ import {
   setVehiculeDansPlanning,
   updateVehicule,
   deleteVehicule,
-  fetchPostesForVehicule,
+  fetchAllPostes,
   addPosteToVehicule,
   updatePosteNom,
   deletePoste,
@@ -36,12 +36,15 @@ export function VehiculesPage() {
   async function load() {
     setLoading(true);
     try {
-      const [v, c, pc] = await Promise.all([fetchVehicules(), fetchCompetences(), fetchAllPostesCompetences()]);
+      // Une seule lecture de tous les postes (en cache), regroupés par véhicule,
+      // au lieu d'une requête par véhicule en deux temps.
+      const [v, c, pc, postes] = await Promise.all([fetchVehicules(), fetchCompetences(), fetchAllPostesCompetences(), fetchAllPostes()]);
       setVehicules(v);
       setCompetences(c);
       setPostesCompetences(pc);
-      const entries = await Promise.all(v.map(async (veh) => [veh.id, await fetchPostesForVehicule(veh.id)] as const));
-      setPostesByVehicule(Object.fromEntries(entries));
+      const parVehicule: Record<string, PosteVehicule[]> = Object.fromEntries(v.map((veh) => [veh.id, []]));
+      for (const p of postes) (parVehicule[p.vehicule_id] ??= []).push(p);
+      setPostesByVehicule(parVehicule);
     } catch (err) {
       console.error(err);
       setError('Impossible de charger les véhicules.');

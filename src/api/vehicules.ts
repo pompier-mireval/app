@@ -10,16 +10,6 @@ export function fetchVehicules(): Promise<Vehicule[]> {
   });
 }
 
-export async function fetchPostesForVehicule(vehiculeId: string): Promise<PosteVehicule[]> {
-  const { data, error } = await supabase
-    .from('postes_vehicule')
-    .select('*')
-    .eq('vehicule_id', vehiculeId)
-    .order('ordre');
-  if (error) throw error;
-  return data as PosteVehicule[];
-}
-
 // Tous les postes, tous véhicules confondus — utile pour construire la
 // grille de planning sans faire une requête par véhicule.
 export function fetchAllPostes(): Promise<PosteVehicule[]> {
