@@ -4,6 +4,10 @@
   --brand: #D62828;
   --brand-strong: #A81F1F;
   --brand-soft: #FBE4E4;
+  /* Texte rouge sur fond rouge clair (≥ 4,5:1) et fond de bouton sous texte blanc (≥ 4,5:1) */
+  --brand-ink: #A81F1F;
+  --brand-fill: #D62828;
+  --brand-fill-hover: #A81F1F;
 
   --green: #1E8F5F;
   --green-soft: #DCF3E7;
@@ -40,6 +44,9 @@
   --brand: #FF6152;
   --brand-strong: #FF8577;
   --brand-soft: #3A1712;
+  --brand-ink: #FF6152;
+  --brand-fill: #D62828; /* le texte des boutons reste blanc : 5:1 */
+  --brand-fill-hover: #B81F1F;
 
   --green: #38C48A;
   --green-soft: #10291F;

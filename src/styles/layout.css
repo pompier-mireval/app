@@ -53,7 +53,7 @@
 
 .user-chip { display: flex; align-items: center; gap: 6px; }
 .avatar-pill { display: flex; align-items: center; gap: 7px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 3px 10px 3px 3px; }
-.avatar-initials { width: 26px; height: 26px; border-radius: 50%; background: var(--brand); color: white; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); }
+.avatar-initials { width: 26px; height: 26px; border-radius: 50%; background: var(--brand-fill); color: white; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); }
 .avatar-name { font-size: 12px; font-weight: 500; color: var(--text-2); display: none; }
 @media (min-width: 480px) { .avatar-name { display: block; } }
 
@@ -134,7 +134,7 @@
 }
 .nav-item:hover { background: var(--surface2); }
 .nav-item:active { background: var(--surface2); }
-.nav-item.active { border-left-color: var(--brand); color: var(--brand); background: var(--brand-soft); }
+.nav-item.active { border-left-color: var(--brand); color: var(--brand-ink); background: var(--brand-soft); }
 .nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
 /* ---------- Barre de navigation mobile ----------
@@ -191,7 +191,7 @@
   transform: translateY(0);
   transition: transform 0.15s ease;
 }
-.bottom-nav-item.active { color: var(--brand); background: var(--brand-soft); }
+.bottom-nav-item.active { color: var(--brand-ink); background: var(--brand-soft); }
 .bottom-nav-item.active .bnav-icon { transform: translateY(-1px); }
 .bottom-nav-item:active .bnav-icon { transform: scale(0.9); }
 
@@ -252,7 +252,7 @@
   text-align: center;
   transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 }
-.more-sheet-item.active { color: var(--brand); border-color: var(--brand); background: var(--brand-soft); }
+.more-sheet-item.active { color: var(--brand-ink); border-color: var(--brand); background: var(--brand-soft); }
 .more-sheet-icon { width: 22px; height: 22px; }
 
 .main-content { flex: 1; padding: 20px 16px calc(96px + env(safe-area-inset-bottom, 0px)); max-width: 960px; margin: 0 auto; width: 100%; }

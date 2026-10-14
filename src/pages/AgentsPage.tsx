@@ -168,6 +168,7 @@ export function AgentsPage() {
             className="input"
             type="email"
             placeholder="email@a-inviter.fr"
+            aria-label="Email de l'agent à inviter"
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
           />
@@ -182,6 +183,7 @@ export function AgentsPage() {
         <input
           className="input"
           placeholder="Rechercher un agent (nom, prénom, email)…"
+          aria-label="Rechercher un agent"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

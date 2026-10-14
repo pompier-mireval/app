@@ -139,6 +139,7 @@ export function RevisionPage() {
             style={{ flex: 1 }}
             maxLength={1000}
             placeholder="Ta question…"
+            aria-label="Ta question"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
           />

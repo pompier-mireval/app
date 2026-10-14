@@ -30,10 +30,13 @@ export function AppShell() {
           <button className="link-edit" onClick={() => setRolePreview(null)}>Quitter l'aperçu</button>
         </div>
       )}
+      <button type="button" className="skip-link" onClick={() => document.getElementById('contenu')?.focus()}>
+        Aller au contenu
+      </button>
       <Topbar darkMode={darkMode} onToggleDark={() => setDarkMode((d) => !d)} />
       <div className="app-body">
         <Sidebar />
-        <main className="main-content">
+        <main className="main-content" id="contenu" tabIndex={-1}>
           <div key={location.pathname} className="page-transition">
             <Suspense fallback={<Spinner />}>
               <Outlet />
