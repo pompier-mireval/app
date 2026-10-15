@@ -570,3 +570,18 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
 }
 .password-toggle:hover { color: var(--brand-ink); }
 @media (max-width: 700px) { .password-toggle { min-height: 44px; } }
+
+/* ---------- Sélecteur d'agents (planning) ---------- */
+.picker-title { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.picker-list { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; max-height: 260px; overflow-y: auto; }
+.picker-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 11px 12px; min-height: 44px; font-size: 13px; text-align: left;
+  background: var(--surface); color: var(--text); border: none; border-bottom: 1px solid var(--border); cursor: pointer;
+}
+.picker-row:last-child { border-bottom: none; }
+.picker-row:hover:not(:disabled) { background: var(--surface2); }
+.picker-row:disabled { opacity: 0.5; cursor: not-allowed; }
+.picker-action { display: inline-flex; align-items: center; gap: 6px; color: var(--brand); font-weight: 500; white-space: nowrap; }
+.picker-toggle { background: none; border: none; padding: 6px 0; text-align: left; font-size: 12.5px; color: var(--text-2); cursor: pointer; }
+.picker-toggle:hover { color: var(--text); text-decoration: underline; }

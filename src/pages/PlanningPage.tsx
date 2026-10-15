@@ -28,6 +28,7 @@ import {
 } from '../lib/dates';
 import { AstreintePanel } from '../components/planning/AstreintePanel';
 import { AgentLink } from '../components/ui/AgentLink';
+import { AgentPicker, type PickerAgent } from '../components/planning/AgentPicker';
 import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Button, Status, Modal, Choice } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
@@ -40,6 +41,8 @@ interface Draft {
   heureFin: string;
 }
 
+// creneauId : '' = selon la disponibilité de l'agent, PERSO = heures saisies.
+const PERSO = 'perso';
 const EMPTY_DRAFT: Draft = { agentId: '', creneauId: '', heureDebut: '07:00', heureFin: '19:00' };
 
 export function PlanningPage() {
@@ -221,30 +224,35 @@ export function PlanningPage() {
     setDrafts((prev) => ({ ...prev, [posteId]: { ...draftFor(posteId), ...patch } }));
   }
 
-  async function handleAddAffectation(posteId: string, day: string) {
-    const draft = draftFor(posteId);
-    if (!draft.agentId) {
-      setError('Sélectionne un agent avant d’affecter.');
-      return;
+  // Horaire appliqué à une affectation : celui choisi explicitement dans la
+  // popup, sinon celui de la disponibilité de l'agent, sinon le premier
+  // créneau type du bon côté (jour/nuit), sinon des heures par défaut.
+  function horaireFor(agentId: string, cell: { posteId: string; date: string; horaire: 'jour' | 'nuit' }) {
+    const draft = draftFor(cell.posteId);
+    if (draft.creneauId && draft.creneauId !== PERSO) return { creneauTypeId: draft.creneauId };
+    if (draft.creneauId === PERSO) return { heureDebutPerso: draft.heureDebut, heureFinPerso: draft.heureFin };
+    const dispo = dispoOnDay(agentId, cell.date);
+    if (dispo?.creneau_type_id) return { creneauTypeId: dispo.creneau_type_id };
+    if (dispo?.heure_debut_perso && dispo.heure_fin_perso) {
+      return { heureDebutPerso: dispo.heure_debut_perso, heureFinPerso: dispo.heure_fin_perso };
     }
-    if (agentsAlreadyOnVehicule(day, vehiculeIdForPoste(posteId), posteId).has(draft.agentId)) {
+    const nuit = cell.horaire === 'nuit';
+    const defaut = creneaux.find((c) => (c.heure_debut > c.heure_fin) === nuit);
+    if (defaut) return { creneauTypeId: defaut.id };
+    return nuit ? { heureDebutPerso: '19:00', heureFinPerso: '07:00' } : { heureDebutPerso: '07:00', heureFinPerso: '19:00' };
+  }
+
+  async function handleAddAffectation(posteId: string, day: string, agentId: string, horaire: 'jour' | 'nuit') {
+    if (agentsAlreadyOnVehicule(day, vehiculeIdForPoste(posteId), posteId).has(agentId)) {
       setError('Cet agent est déjà affecté sur un autre poste de ce véhicule ce jour-là.');
       return;
     }
     setError(null);
     setPendingPostes((prev) => new Set(prev).add(posteId));
     try {
-      await createAffectation({
-        agentId: draft.agentId,
-        posteVehiculeId: posteId,
-        date: day,
-        creneauTypeId: draft.creneauId || undefined,
-        heureDebutPerso: draft.creneauId ? undefined : draft.heureDebut,
-        heureFinPerso: draft.creneauId ? undefined : draft.heureFin,
-      });
+      await createAffectation({ agentId, posteVehiculeId: posteId, date: day, ...horaireFor(agentId, { posteId, date: day, horaire }) });
       await refreshCurrentPeriod();
-      setDrafts((prev) => ({ ...prev, [posteId]: EMPTY_DRAFT }));
-      showToast('Affectation ajoutée.');
+      showToast(`${agentLabel(agentId)} affecté(e).`);
     } catch (err) {
       console.error(err);
       setError("Impossible d'ajouter cette affectation.");
@@ -413,7 +421,7 @@ export function PlanningPage() {
         title="Planning"
         sub={
           canEdit
-            ? 'Clique sur une case pour affecter un agent — plusieurs agents possibles par poste, avec des horaires différents.'
+            ? "Clique sur une case, puis sur un agent pour l'affecter — plusieurs agents possibles par poste."
             : 'Clique sur une case pour voir qui est affecté.'
         }
       />
@@ -658,60 +666,63 @@ export function PlanningPage() {
             )}
           </div>
 
-          {canEdit && (
-            <div className="stack-sm" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-              <Field label="Agent">
-                <Choice
-                  ariaLabel="Agent"
-                  value={draftFor(selectedCell.posteId).agentId}
-                  onChange={(v) => updateDraft(selectedCell.posteId, { agentId: v })}
-                  options={eligibleAgents(selectedCell.posteId)
-                    .filter((a) => !agentsAlreadyOnVehicule(selectedCell.date, vehiculeIdForPoste(selectedCell.posteId), selectedCell.posteId).has(a.id))
-                    .map((a) => ({ a, dispo: dispoOnDay(a.id, selectedCell.date) }))
-                    .filter(({ dispo }) => dispo)
-                    .map(({ a, dispo }) => ({ value: a.id, label: `${a.prenom} ${a.nom}`, hint: `dispo ${formatHoraire(dispo!, creneaux)}` }))}
+          {canEdit && (() => {
+            const cell = selectedCell;
+            const nuit = cell.horaire === 'nuit';
+            const surVehicule = agentsAlreadyOnVehicule(cell.date, vehiculeIdForPoste(cell.posteId), cell.posteId);
+            const dejaIci = new Set(displayAffectationsAt(cell.date, cell.posteId, cell.horaire).map((a) => a.agent_id));
+            const libres = eligibleAgents(cell.posteId).filter((a) => !surVehicule.has(a.id) && !dejaIci.has(a.id));
+            const disponibles: PickerAgent[] = [];
+            for (const a of libres) {
+              const d = dispoOnDay(a.id, cell.date);
+              const label = `${a.prenom} ${a.nom}`;
+              if (d && d.statut !== 'indisponible' && isHoraireNuit(d, creneaux) === nuit) {
+                disponibles.push({ id: a.id, label, hint: formatHoraire(d, creneaux), partiel: d.statut === 'partiel' });
+              }
+            }
+            const draft = draftFor(cell.posteId);
+            return (
+              <div className="stack-sm" style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                <AgentPicker
+                  disponibles={disponibles}
+                  disabled={pendingPostes.has(cell.posteId)}
+                  onPick={(id) => handleAddAffectation(cell.posteId, cell.date, id, cell.horaire)}
                 />
-              </Field>
-              <Field label="Créneau">
-                <Choice
-                  ariaLabel="Créneau"
-                  value={draftFor(selectedCell.posteId).creneauId}
-                  onChange={(v) => updateDraft(selectedCell.posteId, { creneauId: v })}
-                  emptyLabel="Personnalisé"
-                  options={creneaux.map((c) => ({ value: c.id, label: c.nom, hint: `${c.heure_debut.slice(0, 5)}–${c.heure_fin.slice(0, 5)}` }))}
-                />
-              </Field>
-              {!draftFor(selectedCell.posteId).creneauId && (
+                <details>
+                  <summary style={{ fontSize: 12.5, cursor: 'pointer', color: 'var(--text-2)' }}>
+                    Horaire : {draft.creneauId ? (draft.creneauId === PERSO ? 'personnalisé' : creneaux.find((c) => c.id === draft.creneauId)?.nom) : "selon la disponibilité de l'agent"}
+                  </summary>
+                  <div className="stack-sm" style={{ marginTop: 8 }}>
+                    <Field label="Imposer un horaire">
+                      <Choice
+                        ariaLabel="Horaire"
+                        value={draft.creneauId}
+                        onChange={(v) => updateDraft(cell.posteId, { creneauId: v })}
+                        emptyLabel="Selon la disponibilité de l'agent"
+                        options={[
+                          ...creneaux.map((c) => ({ value: c.id, label: c.nom, hint: `${c.heure_debut.slice(0, 5)}–${c.heure_fin.slice(0, 5)}` })),
+                          { value: PERSO, label: 'Horaire personnalisé' },
+                        ]}
+                      />
+                    </Field>
+                    {draft.creneauId === PERSO && (
+                      <div className="field-row">
+                        <Field label="Début">
+                          <input type="time" className="input" value={draft.heureDebut} onChange={(e) => updateDraft(cell.posteId, { heureDebut: e.target.value })} />
+                        </Field>
+                        <Field label="Fin">
+                          <input type="time" className="input" value={draft.heureFin} onChange={(e) => updateDraft(cell.posteId, { heureFin: e.target.value })} />
+                        </Field>
+                      </div>
+                    )}
+                  </div>
+                </details>
                 <div className="field-row">
-                  <Field label="Début">
-                    <input
-                      type="time"
-                      className="input"
-                      value={draftFor(selectedCell.posteId).heureDebut}
-                      onChange={(e) => updateDraft(selectedCell.posteId, { heureDebut: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Fin">
-                    <input
-                      type="time"
-                      className="input"
-                      value={draftFor(selectedCell.posteId).heureFin}
-                      onChange={(e) => updateDraft(selectedCell.posteId, { heureFin: e.target.value })}
-                    />
-                  </Field>
+                  <Button variant="secondary" onClick={() => setSelectedCell(null)}>Terminer</Button>
                 </div>
-              )}
-              <div className="field-row">
-                <Button
-                  onClick={() => handleAddAffectation(selectedCell.posteId, selectedCell.date)}
-                  disabled={pendingPostes.has(selectedCell.posteId)}
-                >
-                  {pendingPostes.has(selectedCell.posteId) ? 'Affectation…' : 'Affecter'}
-                </Button>
-                <Button variant="secondary" onClick={() => setSelectedCell(null)}>Fermer</Button>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </Modal>
       )}
     </div>
