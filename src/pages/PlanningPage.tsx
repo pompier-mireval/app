@@ -204,8 +204,12 @@ export function PlanningPage() {
     );
   }
 
-  function dispoOnDay(agentId: string, day: string): Disponibilite | undefined {
-    return dispos.find((d) => d.agent_id === agentId && d.date === day);
+  // Un agent peut déclarer plusieurs dispos le même jour (jour, nuit, autres
+  // créneaux) : on ne retient que celles du côté demandé et pas "indisponible".
+  function disposOnDay(agentId: string, day: string, horaire: 'jour' | 'nuit'): Disponibilite[] {
+    return dispos.filter(
+      (d) => d.agent_id === agentId && d.date === day && d.statut !== 'indisponible' && isHoraireNuit(d, creneaux) === (horaire === 'nuit')
+    );
   }
 
   function agentLabel(agentId: string): string {
@@ -231,7 +235,7 @@ export function PlanningPage() {
     const draft = draftFor(cell.posteId);
     if (draft.creneauId && draft.creneauId !== PERSO) return { creneauTypeId: draft.creneauId };
     if (draft.creneauId === PERSO) return { heureDebutPerso: draft.heureDebut, heureFinPerso: draft.heureFin };
-    const dispo = dispoOnDay(agentId, cell.date);
+    const dispo = disposOnDay(agentId, cell.date, cell.horaire)[0];
     if (dispo?.creneau_type_id) return { creneauTypeId: dispo.creneau_type_id };
     if (dispo?.heure_debut_perso && dispo.heure_fin_perso) {
       return { heureDebutPerso: dispo.heure_debut_perso, heureFinPerso: dispo.heure_fin_perso };
@@ -668,16 +672,19 @@ export function PlanningPage() {
 
           {canEdit && (() => {
             const cell = selectedCell;
-            const nuit = cell.horaire === 'nuit';
             const surVehicule = agentsAlreadyOnVehicule(cell.date, vehiculeIdForPoste(cell.posteId), cell.posteId);
             const dejaIci = new Set(displayAffectationsAt(cell.date, cell.posteId, cell.horaire).map((a) => a.agent_id));
             const libres = eligibleAgents(cell.posteId).filter((a) => !surVehicule.has(a.id) && !dejaIci.has(a.id));
             const disponibles: PickerAgent[] = [];
             for (const a of libres) {
-              const d = dispoOnDay(a.id, cell.date);
-              const label = `${a.prenom} ${a.nom}`;
-              if (d && d.statut !== 'indisponible' && isHoraireNuit(d, creneaux) === nuit) {
-                disponibles.push({ id: a.id, label, hint: formatHoraire(d, creneaux), partiel: d.statut === 'partiel' });
+              const ds = disposOnDay(a.id, cell.date, cell.horaire);
+              if (ds.length > 0) {
+                disponibles.push({
+                  id: a.id,
+                  label: `${a.prenom} ${a.nom}`,
+                  hint: ds.map((d) => formatHoraire(d, creneaux)).join(' ; '),
+                  partiel: ds.every((d) => d.statut === 'partiel'),
+                });
               }
             }
             const draft = draftFor(cell.posteId);

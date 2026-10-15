@@ -10,7 +10,7 @@ import {
   createAstreintes,
   deleteAstreinte,
 } from '../../api/astreintes';
-import type { Agent, AgentCompetence, Affectation, Astreinte, AstreinteConfig, Competence } from '../../lib/types';
+import type { Agent, AgentCompetence, Disponibilite, Affectation, Astreinte, AstreinteConfig, Competence } from '../../lib/types';
 import { addDays, daysAgo, dayLabel, mondayOf } from '../../lib/dates';
 import {
   CATEGORIES,
@@ -21,7 +21,8 @@ import {
   type Candidat,
 } from '../../lib/astreinte';
 import { AgentLink } from '../ui/AgentLink';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Choice } from '../ui/Primitives';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Choice, Modal } from '../ui/Primitives';
+import { AgentPicker, type PickerAgent } from './AgentPicker';
 import { useToast } from '../ui/Toast';
 
 interface Props {
@@ -52,7 +53,9 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfig, setShowConfig] = useState(false);
-  const [addId, setAddId] = useState('');
+  const [dispos, setDispos] = useState<Disponibilite[]>([]);
+  // Case ouverte pour ajouter un astreint (key = catégorie, null = toutes).
+  const [ajout, setAjout] = useState<{ date: string; key: string | null } | null>(null);
 
   const comps = useMemo(() => resolveCompetences(config), [config]);
   const nbMax = config?.nb_max ?? NB_MAX_DEFAUT;
@@ -67,11 +70,13 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
   }, []);
 
   async function reload() {
-    const [gs, links, ast] = await Promise.all([
+    const [gs, links, ast, dsp] = await Promise.all([
       fetchGardeSemainesForDate(monday),
       fetchAllAgentGardes(),
       fetchAstreintesForRange(monday, friday),
+      fetchDisponibilitesForRange(monday, friday),
     ]);
+    setDispos(dsp);
     const gardeId = gs.find((g) => g.type === 'jour')?.garde_id;
     setGardeDefinie(!!gardeId);
     setMembresIds(new Set(links.filter((l) => l.garde_id === gardeId).map((l) => l.agent_id)));
@@ -101,9 +106,26 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
     items: duJour.filter((a) => categorieOf(a.agent_id, agentCompetences, comps) === key),
   }));
   const sansCategorie = duJour.filter((a) => categorieOf(a.agent_id, agentCompetences, comps) === null);
-  const candidatsAjout = membres.filter(
-    (a) => !duJour.some((x) => x.agent_id === a.id) && categorieOf(a.id, agentCompetences, comps)
-  );
+  // Membres de la garde de jour qui ont déclaré une dispo ce jour-là, ont une
+  // catégorie et ne sont pas déjà astreints : seuls ceux-là sont proposés.
+  function candidatsPour(day: string, key: string | null): PickerAgent[] {
+    const deja = new Set(astreintes.filter((x) => x.date === day).map((x) => x.agent_id));
+    const out: PickerAgent[] = [];
+    for (const a of membres) {
+      const cat = categorieOf(a.id, agentCompetences, comps);
+      if (!cat || deja.has(a.id) || (key && cat !== key)) continue;
+      // Plusieurs dispos possibles le même jour : une seule non-indisponible suffit.
+      const ds = dispos.filter((x) => x.agent_id === a.id && x.date === day && x.statut !== 'indisponible');
+      if (ds.length === 0) continue;
+      out.push({
+        id: a.id,
+        label: `${a.prenom} ${a.nom}`,
+        hint: key ? undefined : CATEGORIES.find((c) => c.key === cat)?.label,
+        partiel: ds.every((x) => x.statut === 'partiel'),
+      });
+    }
+    return out;
+  }
 
   async function run(action: () => Promise<void>, errMsg: string) {
     setError(null);
@@ -156,11 +178,10 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
     }, 'La génération des astreintes a échoué.');
   }
 
-  async function handleAdd() {
-    if (!addId) return;
+  async function handleAdd(agentId: string, day: string) {
     await run(async () => {
-      await createAstreintes([{ agentId: addId, date }]);
-      setAddId('');
+      await createAstreintes([{ agentId, date: day }]);
+      showToast(`${label(agentId)} ajouté(e) à l'astreinte.`);
     }, "Impossible d'ajouter cette astreinte.");
   }
 
@@ -254,7 +275,7 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
                     );
                     return (
                       <td key={d}>
-                        {items.length === 0 ? '—' : items.map((a) => (
+                        {items.length === 0 && !canEdit ? '—' : items.map((a) => (
                           <div key={a.id}>
                             <AgentLink agentId={a.agent_id}>{label(a.agent_id)}</AgentLink>
                             {canEdit && (
@@ -262,6 +283,9 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
                             )}
                           </div>
                         ))}
+                        {canEdit && (
+                          <button className="week-cell-btn no-print" onClick={() => setAjout({ date: d, key })}>+ Ajouter</button>
+                        )}
                       </td>
                     );
                   })}
@@ -301,12 +325,22 @@ export function AstreintePanel({ date, agents, agentCompetences, affectations, c
       )}
 
       {canEdit && !semaine && (
-        <div className="field-row no-print" style={{ marginTop: 12 }}>
-          <Field label="Ajouter manuellement">
-            <Choice ariaLabel="Membre de la garde" value={addId} onChange={setAddId} options={candidatsAjout.map((a) => ({ value: a.id, label: `${a.prenom} ${a.nom}` }))} />
-          </Field>
-          <Button variant="secondary" onClick={handleAdd} disabled={busy || !addId}>Ajouter</Button>
+        <div className="no-print" style={{ marginTop: 12 }}>
+          <Button variant="secondary" onClick={() => setAjout({ date, key: null })} disabled={busy}>+ Ajouter un astreint</Button>
         </div>
+      )}
+
+      {ajout && (
+        <Modal title={`Astreinte — ${dayLabel(ajout.date)}${ajout.key ? ` · ${CATEGORIES.find((c) => c.key === ajout.key)?.label ?? ''}` : ''}`} onClose={() => setAjout(null)}>
+          <AgentPicker
+            disponibles={candidatsPour(ajout.date, ajout.key)}
+            disabled={busy}
+            onPick={(id) => handleAdd(id, ajout.date)}
+          />
+          <div className="field-row" style={{ marginTop: 12 }}>
+            <Button variant="secondary" onClick={() => setAjout(null)}>Terminer</Button>
+          </div>
+        </Modal>
       )}
     </Card>
   );
