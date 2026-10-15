@@ -318,11 +318,25 @@ export function PlanningPage() {
 
       const dispoSemaine = await fetchDisponibilitesForRange(weekStart, weekEnd);
       const vehiculesParGeneration = [...vehicules].sort((a, b) => a.ordre_generation - b.ordre_generation || a.nom.localeCompare(b.nom));
-      const nouvelles: { agentId: string; posteId: string; date: string; creneauTypeId?: string; heureDebutPerso?: string; heureFinPerso?: string }[] = [];
+      type Nouvelle = { agentId: string; posteId: string; date: string; horaire: 'jour' | 'nuit'; creneauTypeId?: string; heureDebutPerso?: string; heureFinPerso?: string };
+      const nouvelles: Nouvelle[] = [];
 
-      for (const day of weekDays) {
+      // Créneaux à remplir : les 5 du week-end ; pour une semaine, uniquement
+      // les nuits (la garde de jour Lun-Ven passe par les astreintes).
+      const genSlots: { date: string; horaire: 'jour' | 'nuit' }[] =
+        bloc.type === 'weekend' ? slots : gardeBlocDays(bloc, 'nuit').map((d) => ({ date: d, horaire: 'nuit' as const }));
+
+      for (const { date: day, horaire } of genSlots) {
+        const nuit = horaire === 'nuit';
         const dejaAffectesCeJour = new Set(affectations.filter((a) => a.date === day).map((a) => a.agent_id));
         for (const nouv of nouvelles.filter((n) => n.date === day)) dejaAffectesCeJour.add(nouv.agentId);
+
+        // Un agent peut avoir plusieurs dispos le même jour : on ne garde
+        // que celles du bon côté (jour/nuit) et pas "indisponible".
+        const dispoDe = (agentId: string) =>
+          dispoSemaine.find(
+            (d) => d.agent_id === agentId && d.date === day && d.statut !== 'indisponible' && isHoraireNuit(d, creneaux) === nuit
+          );
 
         for (const vehicule of vehiculesParGeneration) {
           // Un agent ne peut être qu'une seule fois sur un même engin le
@@ -335,8 +349,8 @@ export function PlanningPage() {
 
           for (const poste of postesByVehicule[vehicule.id] ?? []) {
             const dejaSurCePoste = [
-              ...affectationsAt(day, poste.id),
-              ...nouvelles.filter((n) => n.date === day && n.posteId === poste.id),
+              ...displayAffectationsAt(day, poste.id, horaire),
+              ...nouvelles.filter((n) => n.date === day && n.horaire === horaire && n.posteId === poste.id),
             ];
             if (dejaSurCePoste.length > 0) continue; // ne pas écraser l'existant
 
@@ -344,10 +358,8 @@ export function PlanningPage() {
               eligibleAgents(poste.id)
                 .filter((a) => !dejaSurCetEnginCeJour.has(a.id))
                 .filter((a) => !excludeDejaAffectes || !dejaAffectesCeJour.has(a.id))
-                .map((a) => ({ agent: a, dispo: dispoSemaine.find((d) => d.agent_id === a.id && d.date === day) }))
+                .map((a) => ({ agent: a, dispo: dispoDe(a.id) }))
                 .filter((c) => c.dispo)
-                // Garde de jour Lun-Ven : gérée via les astreintes, pas les véhicules.
-                .filter((c) => !(bloc.type === 'semaine' && !isHoraireNuit(c.dispo!, creneaux)))
                 .sort((a, b) => (charge.get(a.agent.id) ?? 0) - (charge.get(b.agent.id) ?? 0));
 
             // On évite d'abord les agents déjà affectés ce jour-là sur un
@@ -366,6 +378,7 @@ export function PlanningPage() {
               agentId: choix.agent.id,
               posteId: poste.id,
               date: day,
+              horaire,
               creneauTypeId: choix.dispo?.creneau_type_id ?? undefined,
               heureDebutPerso: choix.dispo?.creneau_type_id ? undefined : choix.dispo?.heure_debut_perso ?? undefined,
               heureFinPerso: choix.dispo?.creneau_type_id ? undefined : choix.dispo?.heure_fin_perso ?? undefined,
