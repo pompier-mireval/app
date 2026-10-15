@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { fetchDisponibilites, setDisponibilite, updateDisponibilite, deleteDisponibilite } from '../api/disponibilites';
+import { fetchDisponibilites, setDisponibilite, deleteDisponibilite } from '../api/disponibilites';
 import { fetchCreneauxTypes } from '../api/creneaux';
 import { fetchAffectationsForAgent } from '../api/affectations';
 import { fetchAllPostes, fetchVehicules } from '../api/vehicules';
 import type { CreneauType, Disponibilite, Affectation, PosteVehicule, Vehicule } from '../lib/types';
-import { formatHoraire, buildPosteVehiculeLookup } from '../lib/format';
+import { formatHoraire, isHoraireNuit, buildPosteVehiculeLookup } from '../lib/format';
 import { todayIso, daysAgo, inDays, addDays, mondayOf, weekDaysFrom, dayLabel, dayLabelLong, dateLabelFr } from '../lib/dates';
 import { Card, ErrorBanner, Spinner, Button, PageHeader, Field, EmptyState, Modal, Choice } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
@@ -63,47 +63,40 @@ export function DisposPage() {
 
   const { vehiculeNomForPoste, posteNom } = buildPosteVehiculeLookup(postes, vehicules);
 
-  function dispoOn(day: string): Disponibilite | undefined {
-    return dispos.find((d) => d.date === day);
+  // Plusieurs dispos possibles le même jour (jour, nuit, créneaux…).
+  function disposOn(day: string): Disponibilite[] {
+    return dispos
+      .filter((d) => d.date === day)
+      .sort((a, b) => (formatHoraire(a, creneaux) < formatHoraire(b, creneaux) ? -1 : 1));
   }
 
   function openDay(day: string) {
     setSelectedDay(day);
     setError(null);
-    const existing = dispoOn(day);
-    if (existing?.creneau_type_id) {
-      setFormCreneau(existing.creneau_type_id);
-    } else if (existing) {
-      setFormCreneau('');
-      setFormDebut(existing.heure_debut_perso ?? '07:00');
-      setFormFin(existing.heure_fin_perso ?? '19:00');
-    } else {
-      setFormCreneau(creneaux[0]?.id ?? '');
-      setFormDebut('07:00');
-      setFormFin('19:00');
-    }
+    setFormCreneau(creneaux[0]?.id ?? '');
+    setFormDebut('07:00');
+    setFormFin('19:00');
   }
 
-  async function handleSave() {
-    if (!agent || !selectedDay) return;
+  // Créneau type du côté demandé (nom "jour"/"nuit" en priorité), sinon
+  // horaire personnalisé 07:00–19:00 / 19:00–07:00.
+  function payloadFor(cote: 'jour' | 'nuit') {
+    const duCote = creneaux.filter((c) => (c.heure_debut > c.heure_fin) === (cote === 'nuit'));
+    const c = duCote.find((x) => x.nom.toLowerCase().startsWith(cote === 'jour' ? 'jour' : 'nuit')) ?? duCote[0];
+    if (c) return { creneauTypeId: c.id };
+    return cote === 'jour' ? { heureDebutPerso: '07:00', heureFinPerso: '19:00' } : { heureDebutPerso: '19:00', heureFinPerso: '07:00' };
+  }
+
+  async function addDispos(payloads: { creneauTypeId?: string; heureDebutPerso?: string; heureFinPerso?: string }[], msg: string) {
+    if (!agent || !selectedDay || payloads.length === 0) return;
     setError(null);
     setSaving(true);
     try {
-      const existing = dispoOn(selectedDay);
-      const payload = {
-        statut: 'disponible' as const,
-        creneauTypeId: formCreneau || undefined,
-        heureDebutPerso: formCreneau ? undefined : formDebut,
-        heureFinPerso: formCreneau ? undefined : formFin,
-      };
-      if (existing) {
-        await updateDisponibilite(existing.id, payload);
-      } else {
-        await setDisponibilite({ agentId: agent.id, date: selectedDay, ...payload });
+      for (const payload of payloads) {
+        await setDisponibilite({ agentId: agent.id, date: selectedDay, statut: 'disponible', ...payload });
       }
       setDispos(await fetchDisponibilites(agent.id, daysAgo(90), inDays(180)));
-      setSelectedDay(null);
-      showToast('Disponibilité enregistrée.');
+      showToast(msg);
     } catch (err) {
       console.error(err);
       setError("Impossible d'enregistrer cette disponibilité.");
@@ -112,16 +105,31 @@ export function DisposPage() {
     }
   }
 
-  async function handleDelete() {
-    const existing = selectedDay ? dispoOn(selectedDay) : undefined;
-    if (!agent || !existing) return;
-    if (!confirmAction('Retirer ta disponibilité pour ce jour ?')) return;
+  const aCote = (day: string, cote: 'jour' | 'nuit') => disposOn(day).some((d) => isHoraireNuit(d, creneaux) === (cote === 'nuit'));
+
+  function handleQuick(cote: 'jour' | 'nuit' | '24h') {
+    if (!selectedDay) return;
+    const cotes = cote === '24h' ? (['jour', 'nuit'] as const) : [cote];
+    // Pas de doublon : on ne complète que les côtés encore vides.
+    const manquants = cotes.filter((c) => !aCote(selectedDay, c));
+    addDispos(manquants.map(payloadFor), cote === '24h' ? 'Disponible 24h.' : `Disponibilité ${cote} enregistrée.`);
+  }
+
+  function handleAddCustom() {
+    addDispos(
+      [formCreneau ? { creneauTypeId: formCreneau } : { heureDebutPerso: formDebut, heureFinPerso: formFin }],
+      'Disponibilité enregistrée.'
+    );
+  }
+
+  async function handleDelete(id: string) {
+    if (!agent) return;
+    if (!confirmAction('Retirer cette disponibilité ?')) return;
     setError(null);
     setDeleting(true);
     try {
-      await deleteDisponibilite(existing.id);
+      await deleteDisponibilite(id);
       setDispos(await fetchDisponibilites(agent.id, daysAgo(90), inDays(180)));
-      setSelectedDay(null);
       showToast('Disponibilité retirée.');
     } catch (err) {
       console.error(err);
@@ -144,7 +152,7 @@ export function DisposPage() {
 
   return (
     <div className="stack">
-      <PageHeader title="Mes disponibilités" sub="Clique sur un jour pour te déclarer disponible (ou retirer ta dispo)." />
+      <PageHeader title="Mes disponibilités" sub="Clique sur un jour pour te déclarer disponible : 24h, jour, nuit ou plusieurs créneaux." />
       {error && <ErrorBanner message={error} />}
 
       <Card>
@@ -186,12 +194,12 @@ export function DisposPage() {
 
         <div className="dispo-agenda">
           {weekDays.map((day) => {
-            const d = dispoOn(day);
+            const ds = disposOn(day);
             return (
-              <button key={day} className={`dispo-agenda-cell ${d ? 'tone-green' : 'tone-empty'}`} onClick={() => openDay(day)}>
+              <button key={day} className={`dispo-agenda-cell ${ds.length > 0 ? 'tone-green' : 'tone-empty'}`} onClick={() => openDay(day)}>
                 <span className="dispo-agenda-day">{dayLabel(day)}</span>
-                {d ? (
-                  <span className="dispo-agenda-hours mono">{formatHoraire(d, creneaux)}</span>
+                {ds.length > 0 ? (
+                  ds.map((d) => <span key={d.id} className="dispo-agenda-hours mono">{formatHoraire(d, creneaux)}</span>)
                 ) : (
                   <span className="dispo-agenda-add">+ ajouter</span>
                 )}
@@ -204,37 +212,52 @@ export function DisposPage() {
       {selectedDay && (
         <Modal title={dayLabelLong(selectedDay)} onClose={() => setSelectedDay(null)}>
           <div className="stack-sm">
-            <Field label="Créneau">
-              <Choice
-                ariaLabel="Créneau"
-                value={formCreneau}
-                onChange={setFormCreneau}
-                emptyLabel="Personnalisé"
-                options={creneaux.map((c) => ({ value: c.id, label: c.nom, hint: `${c.heure_debut.slice(0, 5)}–${c.heure_fin.slice(0, 5)}` }))}
-              />
-            </Field>
-            {!formCreneau && (
-              <div className="field-row">
-                <Field label="Début">
-                  <input type="time" className="input" value={formDebut} onChange={(e) => setFormDebut(e.target.value)} />
+            <div>
+              {disposOn(selectedDay).length === 0 && <EmptyState>Aucune disponibilité ce jour-là.</EmptyState>}
+              {disposOn(selectedDay).map((d) => (
+                <div key={d.id} className="list-row">
+                  <span className="mono">{formatHoraire(d, creneaux)}</span>
+                  <button className="link-delete" onClick={() => handleDelete(d.id)} disabled={saving || deleting}>retirer</button>
+                </div>
+              ))}
+            </div>
+
+            <div className="btn-row">
+              <Button onClick={() => handleQuick('24h')} disabled={saving || deleting || (aCote(selectedDay, 'jour') && aCote(selectedDay, 'nuit'))}>24h</Button>
+              <Button variant="secondary" onClick={() => handleQuick('jour')} disabled={saving || deleting || aCote(selectedDay, 'jour')}>Jour</Button>
+              <Button variant="secondary" onClick={() => handleQuick('nuit')} disabled={saving || deleting || aCote(selectedDay, 'nuit')}>Nuit</Button>
+            </div>
+
+            <details>
+              <summary style={{ fontSize: 12.5, cursor: 'pointer', color: 'var(--text-2)' }}>Autre créneau ou horaire personnalisé</summary>
+              <div className="stack-sm" style={{ marginTop: 8 }}>
+                <Field label="Créneau">
+                  <Choice
+                    ariaLabel="Créneau"
+                    value={formCreneau}
+                    onChange={setFormCreneau}
+                    emptyLabel="Personnalisé"
+                    options={creneaux.map((c) => ({ value: c.id, label: c.nom, hint: `${c.heure_debut.slice(0, 5)}–${c.heure_fin.slice(0, 5)}` }))}
+                  />
                 </Field>
-                <Field label="Fin">
-                  <input type="time" className="input" value={formFin} onChange={(e) => setFormFin(e.target.value)} />
-                </Field>
+                {!formCreneau && (
+                  <div className="field-row">
+                    <Field label="Début">
+                      <input type="time" className="input" value={formDebut} onChange={(e) => setFormDebut(e.target.value)} />
+                    </Field>
+                    <Field label="Fin">
+                      <input type="time" className="input" value={formFin} onChange={(e) => setFormFin(e.target.value)} />
+                    </Field>
+                  </div>
+                )}
+                <div>
+                  <Button variant="secondary" onClick={handleAddCustom} disabled={saving || deleting}>Ajouter ce créneau</Button>
+                </div>
               </div>
-            )}
+            </details>
+
             <div className="field-row">
-              <Button onClick={handleSave} disabled={saving || deleting}>
-                {saving ? 'Enregistrement…' : 'Enregistrer'}
-              </Button>
-              {dispoOn(selectedDay) && (
-                <Button variant="secondary" onClick={handleDelete} disabled={saving || deleting}>
-                  {deleting ? 'Suppression…' : 'Retirer ma dispo'}
-                </Button>
-              )}
-              <Button variant="secondary" onClick={() => setSelectedDay(null)} disabled={saving || deleting}>
-                Annuler
-              </Button>
+              <Button variant="secondary" onClick={() => setSelectedDay(null)}>Terminer</Button>
             </div>
           </div>
         </Modal>
