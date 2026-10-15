@@ -15,6 +15,7 @@ import { formatHoraire, isHoraireNuit } from '../lib/format';
 import {
   todayIso,
   dayLabel,
+  dayLabelLong,
   daysAgo,
   gardeBlocOf,
   mondayOf,
@@ -464,9 +465,18 @@ export function PlanningPage() {
             )}
             </div>
             {viewMode === 'jour' ? (
-              <Field label="Date" style={{ maxWidth: 200 }}>
-                <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
-              </Field>
+              <div className="btn-row" style={{ alignItems: 'flex-end' }}>
+                <Button variant="secondary" onClick={() => setDate(addDays(date, -1))} aria-label="Jour précédent">
+                  <IconChevronLeft /> Veille
+                </Button>
+                <Field label="Date" style={{ maxWidth: 170 }}>
+                  <input type="date" className="input" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
+                </Field>
+                <Button variant="secondary" onClick={() => setDate(addDays(date, 1))} aria-label="Jour suivant">
+                  Lendemain <IconChevronRight />
+                </Button>
+                <Button variant="secondary" onClick={() => setDate(todayIso())}>Aujourd'hui</Button>
+              </div>
             ) : (
               <div className="btn-row">
                 <Button variant="secondary" onClick={() => setDate(prevGardeBloc(bloc).start)}>
@@ -484,6 +494,12 @@ export function PlanningPage() {
 
         {viewMode === 'semaine' && (
           <p style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 10 }}>{gardeBlocLabel(bloc)}</p>
+        )}
+        {viewMode === 'jour' && (
+          <p style={{ fontSize: 15, fontWeight: 600, marginTop: 10, textTransform: 'capitalize' }}>
+            {dayLabelLong(date)} {date.slice(0, 4)} — {horaireMode === 'nuit' ? 'Nuit' : 'Journée'}
+            {date === todayIso() && <span style={{ fontWeight: 400, color: 'var(--text-3)' }}> (aujourd'hui)</span>}
+          </p>
         )}
 
         {viewMode === 'semaine' && canEdit && (
