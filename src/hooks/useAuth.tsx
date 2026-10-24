@@ -125,7 +125,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function updatePassword(newPassword: string) {
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    // Lève aussi le drapeau posé à la création du compte (mot de passe provisoire).
+    const { error } = await supabase.auth.updateUser({ password: newPassword, data: { must_change_password: false } });
     if (error) throw error;
   }
 

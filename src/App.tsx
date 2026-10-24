@@ -21,6 +21,7 @@ const RevisionPage = lazy(() => import('./pages/RevisionPage').then((m) => ({ de
 import { MentionsLegalesPage } from './pages/legal/MentionsLegalesPage';
 import { ConfidentialitePage } from './pages/legal/ConfidentialitePage';
 import { CguPage } from './pages/legal/CguPage';
+import { ChangePasswordScreen } from './components/auth/ChangePasswordScreen';
 import { Spinner } from './components/ui/Primitives';
 
 // Les pages légales doivent rester accessibles sans session (l'écran de
@@ -39,6 +40,11 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
   if (!session) {
     return <AuthScreen />;
+  }
+
+  // Compte créé par un superadmin avec un mot de passe provisoire.
+  if (session.user.user_metadata?.must_change_password) {
+    return <ChangePasswordScreen />;
   }
 
   return <>{children}</>;

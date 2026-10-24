@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { fetchAgents, inviteAgent, updateAgentIdentity, setAgentActif, updateNiveauAcces, updateAgentGrade } from '../api/agents';
+import { fetchAgents, inviteAgent, createAgentAccount, updateAgentIdentity, setAgentActif, updateNiveauAcces, updateAgentGrade } from '../api/agents';
 import { fetchCompetences, grantCompetence, revokeCompetence, fetchAllAgentCompetences } from '../api/competences';
 import { fetchAllAgentGardes } from '../api/gardes';
 import { fetchGrades } from '../api/grades';
@@ -9,7 +9,7 @@ import type { Agent, Competence, AgentCompetence, NiveauAcces, Grade } from '../
 import { scopeAgentsToMyGardes } from '../lib/scope';
 import { useAuth } from '../hooks/useAuth';
 import { AgentLink } from '../components/ui/AgentLink';
-import { Card, ErrorBanner, Spinner, Badge, PageHeader, EmptyState, Button, Choice } from '../components/ui/Primitives';
+import { Card, ErrorBanner, Spinner, Badge, PageHeader, EmptyState, Button, Choice, PasswordInput } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
 import { IconSearch } from '../components/ui/Icons';
@@ -18,6 +18,7 @@ const NIVEAUX: NiveauAcces[] = ['utilisateur', 'admin', 'superadmin'];
 
 export function AgentsPage() {
   const { agent: moi } = useAuth();
+  const isSuperadmin = moi?.niveau_acces === 'superadmin';
   const { showToast } = useToast();
   const [search, setSearch] = useState('');
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -31,6 +32,7 @@ export function AgentsPage() {
   const [editNom, setEditNom] = useState('');
   const [editPrenom, setEditPrenom] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
   const [inviting, setInviting] = useState(false);
 
   function load() {
@@ -134,13 +136,27 @@ export function AgentsPage() {
     setError(null);
     setInviting(true);
     try {
-      await inviteAgent(inviteEmail.trim());
+      if (isSuperadmin) {
+        if (tempPassword.length < 8) {
+          setError('Mot de passe provisoire : 8 caractères minimum.');
+          return;
+        }
+        await createAgentAccount(inviteEmail.trim(), tempPassword);
+        setTempPassword('');
+        showToast('Compte créé — l\'agent changera son mot de passe à sa première connexion.');
+      } else {
+        await inviteAgent(inviteEmail.trim());
+        showToast('Agent invité — il pourra se connecter avec cet email.');
+      }
       setInviteEmail('');
       load();
-      showToast('Agent invité — il pourra se connecter avec cet email.');
     } catch (err) {
       console.error(err);
-      setError("Impossible d'inviter cet agent (email déjà utilisé ?).");
+      setError(
+        isSuperadmin
+          ? `Impossible de créer ce compte : ${err instanceof Error ? err.message : 'erreur inconnue'}`
+          : "Impossible d'inviter cet agent (email déjà utilisé ?)."
+      );
     } finally {
       setInviting(false);
     }
@@ -172,8 +188,17 @@ export function AgentsPage() {
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
           />
+          {isSuperadmin && (
+            <PasswordInput
+              ariaLabel="Mot de passe provisoire"
+              placeholder="Mot de passe provisoire"
+              autoComplete="new-password"
+              value={tempPassword}
+              onChange={setTempPassword}
+            />
+          )}
           <Button type="submit" disabled={inviting}>
-            {inviting ? 'Invitation…' : 'Inviter un agent'}
+            {inviting ? (isSuperadmin ? 'Création…' : 'Invitation…') : isSuperadmin ? 'Créer le compte' : 'Inviter un agent'}
           </Button>
         </form>
       </Card>

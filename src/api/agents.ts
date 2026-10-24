@@ -12,6 +12,19 @@ export async function inviteAgent(email: string): Promise<void> {
   if (error) throw error;
 }
 
+// Réservé superadmin (vérifié dans l'Edge Function create-agent) — crée le
+// compte avec un mot de passe provisoire que l'agent devra changer à sa
+// première connexion.
+export async function createAgentAccount(email: string, password: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('create-agent', { body: { email, password } });
+  if (error) {
+    // Le corps de la réponse d'erreur porte le message utile (ex. compte déjà existant).
+    const detail = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error(detail?.error ?? error.message);
+  }
+  if (data?.error) throw new Error(data.error);
+}
+
 export function fetchAgents(): Promise<Agent[]> {
   return cached('agents', async () => {
     const { data, error } = await supabase
