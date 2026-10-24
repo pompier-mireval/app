@@ -55,7 +55,7 @@ export function AuthScreen() {
           <input
             type="email"
             className="input"
-            placeholder="prenom.nom@sdis34.fr"
+            placeholder="p.nom@sdis34.fr"
             aria-label="Adresse email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
