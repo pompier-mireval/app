@@ -4,6 +4,7 @@ import { Topbar } from './Topbar';
 import { Sidebar, BottomNav } from './Nav';
 import { useAuth } from '../../hooks/useAuth';
 import { Spinner } from '../ui/Primitives';
+import { ErrorBoundary } from '../ui/ErrorBoundary';
 
 const NIVEAU_LABEL: Record<string, string> = {
   utilisateur: 'Utilisateur',
@@ -38,9 +39,11 @@ export function AppShell() {
         <Sidebar />
         <main className="main-content" id="contenu" tabIndex={-1}>
           <div key={location.pathname} className="page-transition">
-            <Suspense fallback={<Spinner />}>
-              <Outlet />
-            </Suspense>
+            <ErrorBoundary resetKey={location.pathname}>
+              <Suspense fallback={<Spinner />}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>
