@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type React from 'react';
+import { createPortal } from 'react-dom';
 
 export function Card({
   children,
@@ -133,7 +134,11 @@ export function Modal({
     };
   }, [onClose]);
 
-  return (
+  // Rendu dans <body> : .page-transition garde un `transform` après son
+  // animation (fill-mode both), ce qui fait d'elle le repère d'un élément
+  // `position: fixed` — la popup se centrait alors sur la page entière
+  // (très longue sur mobile) et non sur l'écran.
+  return createPortal(
     <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal-panel" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={panelRef}>
         <div className="modal-header">
@@ -142,7 +147,8 @@ export function Modal({
         </div>
         <div className="modal-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
