@@ -50,13 +50,13 @@ export async function deleteGarde(id: string): Promise<void> {
   if (error) throw error;
 }
 
-// Réservé superadmin (policy RLS)
+// Superadmin, ou admin membre de cette garde (policy RLS)
 export async function assignAgentToGarde(agentId: string, gardeId: string): Promise<void> {
   const { error } = await supabase.from('agent_gardes').insert({ agent_id: agentId, garde_id: gardeId });
   if (error) throw error;
 }
 
-// Réservé superadmin (policy RLS)
+// Superadmin, ou admin membre de cette garde (policy RLS)
 export async function removeAgentFromGarde(agentId: string, gardeId: string): Promise<void> {
   const { error } = await supabase
     .from('agent_gardes')

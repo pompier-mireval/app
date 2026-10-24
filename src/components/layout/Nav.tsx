@@ -43,7 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/petit-materiel', label: 'Petit matériel', icon: IconToolbox, minNiveau: 'utilisateur' },
   { to: '/verification', label: 'Vérification', icon: IconCheckCircle, minNiveau: 'utilisateur' },
   { to: '/agents', label: 'Agents', icon: IconUsers, minNiveau: 'admin' },
-  { to: '/gardes', label: 'Gardes', icon: IconShield, minNiveau: 'superadmin' },
+  { to: '/gardes', label: 'Gardes', icon: IconShield, minNiveau: 'admin' },
   { to: '/vehicules', label: 'Véhicules', icon: IconTruck, minNiveau: 'superadmin' },
   { to: '/referentiels', label: 'Référentiels', icon: IconSettings, minNiveau: 'superadmin' },
 ];

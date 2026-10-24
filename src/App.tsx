@@ -86,7 +86,7 @@ export default function App() {
           <Route
             path="/gardes"
             element={
-              <ProtectedRoute minNiveau="superadmin">
+              <ProtectedRoute minNiveau="admin">
                 <GardesPage />
               </ProtectedRoute>
             }

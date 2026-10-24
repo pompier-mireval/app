@@ -8,6 +8,7 @@ import {
   removeAgentFromGarde,
   fetchAllAgentGardes,
 } from '../api/gardes';
+import { useAuth } from '../hooks/useAuth';
 import { fetchAgents } from '../api/agents';
 import type { Garde, Agent } from '../lib/types';
 import type { AgentGardeLink } from '../api/gardes';
@@ -19,6 +20,8 @@ import { RotationGardes } from '../components/gardes/RotationGardes';
 
 export function GardesPage() {
   const { showToast } = useToast();
+  const { agent: moi } = useAuth();
+  const isSuperadmin = moi?.niveau_acces === 'superadmin';
   const [gardes, setGardes] = useState<Garde[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [memberships, setMemberships] = useState<AgentGardeLink[]>([]);
@@ -99,11 +102,20 @@ export function GardesPage() {
 
   if (loading) return <Spinner />;
 
+  // Un admin (chef de garde) ne gère que les gardes dont il est membre.
+  const gardesVisibles = isSuperadmin
+    ? gardes
+    : gardes.filter((g) => memberships.some((m) => m.agent_id === moi?.id && m.garde_id === g.id));
+
   return (
     <div className="stack">
-      <PageHeader title="Gardes" sub="Crée les équipes d'appartenance et compose-les." />
+      <PageHeader
+        title="Gardes"
+        sub={isSuperadmin ? "Crée les équipes d'appartenance et compose-les." : "Ajoute ou retire des agents dans tes gardes."}
+      />
       {error && <ErrorBanner message={error} />}
 
+      {isSuperadmin && (
       <Card>
         <div className="field-row">
           <Field label="Nouvelle garde">
@@ -112,10 +124,15 @@ export function GardesPage() {
           <Button onClick={handleCreateGarde}>Créer</Button>
         </div>
       </Card>
+      )}
 
-      <RotationGardes gardes={gardes} onError={setError} />
+      {isSuperadmin && <RotationGardes gardes={gardes} onError={setError} />}
 
-      {gardes.map((g) => (
+      {!isSuperadmin && gardesVisibles.length === 0 && (
+        <EmptyState>Tu n'es membre d'aucune garde : demande au superadmin de t'y ajouter.</EmptyState>
+      )}
+
+      {gardesVisibles.map((g) => (
         <Card key={g.id} accent="brand">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             {editing === g.id ? (
@@ -127,10 +144,12 @@ export function GardesPage() {
             ) : (
               <>
                 <strong>{g.nom}</strong>
-                <span style={{ display: 'flex', gap: 10 }}>
-                  <button className="link-edit" onClick={() => { setEditing(g.id); setEditNom(g.nom); }}>renommer</button>
-                  <button className="link-delete" onClick={() => handleDeleteGarde(g.id)}>supprimer</button>
-                </span>
+                {isSuperadmin && (
+                  <span style={{ display: 'flex', gap: 10 }}>
+                    <button className="link-edit" onClick={() => { setEditing(g.id); setEditNom(g.nom); }}>renommer</button>
+                    <button className="link-delete" onClick={() => handleDeleteGarde(g.id)}>supprimer</button>
+                  </span>
+                )}
               </>
             )}
           </div>
@@ -139,7 +158,7 @@ export function GardesPage() {
               const isMember = memberships.some((m) => m.agent_id === a.id && m.garde_id === g.id);
               return (
                 <label key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-                  <input type="checkbox" checked={isMember} onChange={() => handleToggle(a.id, g.id, isMember)} />
+                  <input type="checkbox" checked={isMember} disabled={!isSuperadmin && a.id === moi?.id} onChange={() => handleToggle(a.id, g.id, isMember)} />
                   <span onClick={(e) => e.stopPropagation()}>
                     <AgentLink agentId={a.id}>{a.prenom} {a.nom}</AgentLink>
                   </span>
