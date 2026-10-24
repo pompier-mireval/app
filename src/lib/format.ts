@@ -55,3 +55,9 @@ export function buildPosteVehiculeLookup(postes: PosteVehicule[], vehicules: Veh
     },
   };
 }
+
+// Lien d'appel `tel:` : on garde chiffres et « + » (espaces, points et tirets
+// de saisie ne passent pas bien dans tous les lanceurs d'appel).
+export function telHref(telephone: string): string {
+  return `tel:${telephone.replace(/[^\d+]/g, '')}`;
+}

@@ -7,6 +7,7 @@ import { fetchGrades } from '../api/grades';
 import { fetchGardesForAgent } from '../api/gardes';
 import type { Agent, Competence, Grade, Garde } from '../lib/types';
 import { Card, ErrorBanner, SuccessBanner, Spinner, Button, PageHeader, Field, Badge, EmptyState, PasswordInput } from '../components/ui/Primitives';
+import { telHref } from '../lib/format';
 import { useToast } from '../components/ui/Toast';
 
 interface Props {
@@ -132,7 +133,7 @@ export function AgentProfilePage({ own = false }: Props) {
               </div>
             ) : (
               <span className="mono" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                {target.telephone || '—'}
+                {target.telephone ? <a href={telHref(target.telephone)} className="agent-link">{target.telephone}</a> : '—'}
                 {own && <button className="link-edit" onClick={() => setEditingTelephone(true)}>modifier</button>}
               </span>
             )}

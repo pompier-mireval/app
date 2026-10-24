@@ -10,6 +10,7 @@ import { scopeAgentsToMyGardes } from '../lib/scope';
 import { useAuth } from '../hooks/useAuth';
 import { AgentLink } from '../components/ui/AgentLink';
 import { Card, ErrorBanner, Spinner, Badge, PageHeader, EmptyState, Button, Choice, PasswordInput } from '../components/ui/Primitives';
+import { telHref } from '../lib/format';
 import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
 import { IconSearch } from '../components/ui/Icons';
@@ -231,6 +232,9 @@ export function AgentsPage() {
                     <strong><AgentLink agentId={agent.id}>{agent.prenom} {agent.nom}</AgentLink></strong>{' '}
                     <button className="link-edit" onClick={() => startEdit(agent)}>modifier</button>
                     <div style={{ fontSize: 12, color: 'var(--text-3)' }} className="mono">{agent.email}</div>
+                    {agent.telephone && (
+                      <div style={{ fontSize: 12 }} className="mono"><a href={telHref(agent.telephone)} className="agent-link">{agent.telephone}</a></div>
+                    )}
                   </>
                 )}
               </div>
