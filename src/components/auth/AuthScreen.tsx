@@ -9,6 +9,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [cguAccepted, setCguAccepted] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,6 +21,10 @@ export function AuthScreen() {
     }
     if (!password) {
       setError('Renseigne ton mot de passe.');
+      return;
+    }
+    if (!cguAccepted) {
+      setError("Coche la case pour accepter les CGU et la politique de confidentialité avant de continuer.");
       return;
     }
 
@@ -63,15 +68,26 @@ export function AuthScreen() {
             onChange={setPassword}
             autoComplete="current-password"
           />
+          <label className="checkbox-pill" style={{ fontSize: 12 }}>
+            <input
+              type="checkbox"
+              checked={cguAccepted}
+              onChange={(e) => setCguAccepted(e.target.checked)}
+            />
+            {/* Un seul bloc de texte : sans ce <span>, chaque morceau devenait une colonne du flex. */}
+            <span>
+              J'ai lu et j'accepte les{' '}
+              <a href="#/cgu" target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>CGU</a>{' '}
+              et la{' '}
+              <a href="#/confidentialite" target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+                politique de confidentialité
+              </a>
+            </span>
+          </label>
           {error && <p role="alert" style={{ color: 'var(--red)', fontSize: 13 }}>{error}</p>}
           <button className="btn-primary" type="submit" disabled={submitting}>
             {submitting ? 'Connexion…' : 'Se connecter'}
           </button>
-          <p style={{ fontSize: 12, color: 'var(--text-3)', textAlign: 'center' }}>
-            En te connectant, tu acceptes les{' '}
-            <a href="#/cgu" target="_blank" rel="noreferrer">CGU</a> et la{' '}
-            <a href="#/confidentialite" target="_blank" rel="noreferrer">politique de confidentialité</a>.
-          </p>
         </form>
         <LegalLinks className="auth-legal-links" />
       </div>

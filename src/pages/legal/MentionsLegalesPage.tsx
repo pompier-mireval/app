@@ -2,9 +2,6 @@ import { LegalLayout } from '../../components/legal/LegalLayout';
 
 // Obligatoire (LCEN, art. 6-III) pour tout site édité depuis la France,
 // même à accès restreint : l'écran de connexion, lui, est public.
-// Éditeur = un particulier qui souhaite rester anonyme : dans ce cas, la
-// loi permet de ne publier que les coordonnées de l'hébergeur, à condition
-// que celui-ci détienne les informations d'identification de l'éditeur.
 export function MentionsLegalesPage() {
   return (
     <LegalLayout title="Mentions légales">
@@ -12,20 +9,13 @@ export function MentionsLegalesPage() {
 
       <h2>Éditeur du site</h2>
       <p>
-        Ce site est édité, à titre personnel et non professionnel, par un membre du centre
-        d'incendie et de secours concerné. Conformément à l'article 6-III de la loi n° 2004-575 du
-        21 juin 2004 pour la confiance dans l'économie numérique, l'éditeur d'un site non
-        professionnel peut ne pas rendre publique son identité, à condition d'avoir communiqué ses
-        données personnelles à son hébergeur. C'est le cas ici : seules les coordonnées de
-        l'hébergeur sont donc publiées ci-dessous.
+        Ce site est édité, à titre personnel et non professionnel, par Bastien Tiffy, membre du
+        centre d'incendie et de secours concerné.
       </p>
-      <p style={{ fontSize: 12 }}>
-        <mark className="todo">
-          À vérifier : ton compte GitHub doit être associé à ta véritable identité (nom, adresse)
-          pour que cette anonymisation soit valable — un simple pseudonyme ne suffit pas si GitHub
-          ne peut pas t'identifier en cas de demande légale.
-        </mark>
-      </p>
+      <ul>
+        <li>Email : <a href="mailto:tbastien6@gmail.com">tbastien6@gmail.com</a></li>
+        <li>Téléphone : <a href="tel:0651674638">06 51 67 46 38</a></li>
+      </ul>
 
       <h2>Hébergement</h2>
       <p>Ce site (interface web) est hébergé par GitHub Pages :</p>
@@ -51,8 +41,9 @@ export function MentionsLegalesPage() {
 
       <h2>Contact</h2>
       <p>
-        Pour toute question relative à ce site, utiliser le contact indiqué dans la{' '}
-        <a href="#/confidentialite">politique de confidentialité</a>.
+        Pour toute question relative à ce site, écrire à{' '}
+        <a href="mailto:tbastien6@gmail.com">tbastien6@gmail.com</a>. Pour les données
+        personnelles, voir aussi la <a href="#/confidentialite">politique de confidentialité</a>.
       </p>
     </LegalLayout>
   );
