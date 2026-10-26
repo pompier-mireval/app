@@ -24,7 +24,9 @@ const TYPE_LABEL: Record<string, string> = {
   BA: 'Bâche',
   PR: 'PR',
 };
-const TYPE_COLOR: Record<string, string> = { PI: '#D62828', BI: '#1F5FBF' };
+const TYPE_COLOR: Record<string, string> = { PI: '#D62828', BI: '#7B3FBF' };
+// Bleu réservé à « ma position », comme dans Plans / Google Maps.
+const MOI_COLOR = '#1A73E8';
 const AUTRE_COLOR = '#1E8F5F';
 
 // Centre par défaut : Mireval.
@@ -151,8 +153,14 @@ export function CartePage() {
     const layer = moiLayer.current;
     if (!layer || !position) return;
     layer.clearLayers();
-    L.circle([position.lat, position.lon], { radius: position.precision, color: '#1F5FBF', weight: 1, fillOpacity: 0.08 }).addTo(layer);
-    L.circleMarker([position.lat, position.lon], { radius: 8, color: '#fff', weight: 3, fillColor: '#1F5FBF', fillOpacity: 1 })
+    L.circle([position.lat, position.lon], { radius: position.precision, color: MOI_COLOR, weight: 1, fillOpacity: 0.08, interactive: false }).addTo(layer);
+    // Marqueur HTML (et non un rond sur le canvas) : il passe au-dessus des
+    // points d'eau et son halo animé le distingue d'un PEI.
+    L.marker([position.lat, position.lon], {
+      icon: L.divIcon({ className: 'pei-moi', html: '<span class="pei-moi-halo"></span><span class="pei-moi-point"></span>', iconSize: [22, 22] }),
+      zIndexOffset: 1000,
+      keyboard: false,
+    })
       .bindPopup('Ma position')
       .addTo(layer);
     if (centreSurMoi.current) {
@@ -223,6 +231,7 @@ export function CartePage() {
             {localisation === 'recherche' ? 'Localisation…' : localisation === 'on' ? 'Recentrer sur moi' : 'Me localiser'}
           </Button>
           <div className="pei-legende">
+            <span><i style={{ background: MOI_COLOR, boxShadow: `0 0 0 3px ${MOI_COLOR}40` }} /> Moi</span>
             <span><i style={{ background: TYPE_COLOR.PI }} /> Poteau</span>
             <span><i style={{ background: TYPE_COLOR.BI }} /> Bouche</span>
             <span><i style={{ background: AUTRE_COLOR }} /> Citerne, aspiration…</span>

@@ -603,3 +603,17 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
 .pei-legende span { display: inline-flex; align-items: center; gap: 5px; }
 .pei-legende i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 0 0 1px var(--border); }
 .leaflet-popup-content { font-size: 13px; line-height: 1.45; }
+.pei-moi { position: relative; }
+.pei-moi-point {
+  position: absolute; inset: 3px; border-radius: 50%;
+  background: #1A73E8; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+.pei-moi-halo {
+  position: absolute; inset: -8px; border-radius: 50%;
+  background: rgba(26, 115, 232, 0.35); animation: pei-moi-pulse 1.8s ease-out infinite;
+}
+@keyframes pei-moi-pulse {
+  from { transform: scale(0.5); opacity: 1; }
+  to { transform: scale(1.4); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .pei-moi-halo { animation: none; opacity: 0.5; } }
