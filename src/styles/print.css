@@ -29,3 +29,23 @@
 
   a[href]::after { content: none; }
 }
+
+/* Capture en image pour l'impression sur iPhone (voir PrintButton) : même
+   rendu que @media print, en thème clair quel que soit le thème choisi. */
+.print-capture {
+  position: fixed; left: -10000px; top: 0;
+  width: 1000px; padding: 16px;
+  --bg: #fff; --surface: #fff; --surface2: #f5f6f8; --border: #999;
+  --text: #000; --text-2: #222; --text-3: #444;
+  --amber-soft: #f2f2f2; --shadow: none;
+  background: #fff; color: #000;
+}
+.print-capture .main-content { max-width: 100%; padding: 0; margin: 0; animation: none; }
+.print-capture .page-transition { animation: none; transform: none; }
+.print-capture .card { box-shadow: none; border: 1px solid #999; border-left-width: 1px; padding: 10px; }
+.print-capture .print-only { display: block !important; }
+.print-capture .week-cell-print { display: inline !important; }
+.print-capture .week-cell-btn { display: none !important; }
+.print-capture .week-grid-scroll { overflow: visible; }
+.print-capture .week-grid th:first-child, .print-capture .week-grid td:first-child { position: static; box-shadow: none; }
+.print-capture .week-grid-vehicule-row td { background: #eee; color: #000; }

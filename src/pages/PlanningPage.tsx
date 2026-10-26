@@ -32,6 +32,7 @@ import { AgentLink } from '../components/ui/AgentLink';
 import { AgentPicker, type PickerAgent } from '../components/planning/AgentPicker';
 import { Card, ErrorBanner, Spinner, PageHeader, Field, EmptyState, Button, Status, Modal, Choice } from '../components/ui/Primitives';
 import { useToast } from '../components/ui/Toast';
+import { PrintButton } from '../components/ui/PrintButton';
 import { confirmAction } from '../lib/confirm';
 import { IconChevronLeft, IconChevronRight } from '../components/ui/Icons';
 
@@ -493,7 +494,7 @@ export function PlanningPage() {
               </div>
             )}
           </div>
-          <span className="planning-print"><Button variant="secondary" onClick={() => window.print()}>Imprimer</Button></span>
+          <span className="planning-print"><PrintButton filename={`planning-${viewMode === 'jour' ? date : weekStart}`} /></span>
         </div>
 
         {viewMode === 'semaine' && (
