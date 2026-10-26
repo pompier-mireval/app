@@ -52,6 +52,13 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: { cacheName: 'lazy-chunks', expiration: { maxEntries: 8 } },
           },
+          {
+            // Points d'eau incendie (≈ 1,7 Mo) : gardés pour un usage hors
+            // réseau, rafraîchis en arrière-plan.
+            urlPattern: /\/data\/pei34\.json$/,
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'donnees-pei', expiration: { maxEntries: 2 } },
+          },
         ],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },

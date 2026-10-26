@@ -213,3 +213,11 @@ export function IconKey(props: IconProps) {
     </svg>
   );
 }
+
+export function IconDroplet(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 2.8s6.5 7.1 6.5 11.7a6.5 6.5 0 0 1-13 0C5.5 9.9 12 2.8 12 2.8Z" />
+    </svg>
+  );
+}

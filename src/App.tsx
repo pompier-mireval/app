@@ -18,6 +18,7 @@ const ControlePage = lazy(() => import('./pages/ControlePage').then((m) => ({ de
 const HabillementPage = lazy(() => import('./pages/HabillementPage').then((m) => ({ default: m.HabillementPage })));
 const MecaniquePage = lazy(() => import('./pages/MecaniquePage').then((m) => ({ default: m.MecaniquePage })));
 const PretsPage = lazy(() => import('./pages/PretsPage').then((m) => ({ default: m.PretsPage })));
+const CartePage = lazy(() => import('./pages/CartePage').then((m) => ({ default: m.CartePage })));
 const RevisionPage = lazy(() => import('./pages/RevisionPage').then((m) => ({ default: m.RevisionPage })));
 import { MentionsLegalesPage } from './pages/legal/MentionsLegalesPage';
 import { ConfidentialitePage } from './pages/legal/ConfidentialitePage';
@@ -113,6 +114,7 @@ export default function App() {
           <Route path="/habillement" element={<HabillementPage />} />
           <Route path="/mecanique" element={<MecaniquePage />} />
           <Route path="/prets" element={<PretsPage />} />
+          <Route path="/carte" element={<CartePage />} />
           <Route path="/inventaire" element={<ControlePage key="inventaire" famille="inventaire" />} />
           <Route path="/batiment" element={<BatimentPage />} />
           <Route path="/petit-materiel" element={<ControlePage key="materiel" famille="materiel" />} />

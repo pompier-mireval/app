@@ -21,6 +21,7 @@ import {
   IconToolbox,
   IconMenu,
   IconKey,
+  IconDroplet,
 } from '../ui/Icons';
 
 interface NavItem {
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/dispos', label: 'Mes dispos', icon: IconClock, minNiveau: 'utilisateur' },
   { to: '/planning', label: 'Planning', icon: IconCalendar, minNiveau: 'utilisateur' },
   { to: '/statistiques', label: 'Statistiques', icon: IconBarChart, minNiveau: 'admin' },
+  { to: '/carte', label: 'Carte PEI', icon: IconDroplet, minNiveau: 'utilisateur' },
   { to: '/revision', label: 'Révision', icon: IconClipboardCheck, minNiveau: 'utilisateur' },
   { to: '/habillement', label: 'Habillement', icon: IconShirt, minNiveau: 'utilisateur' },
   { to: '/mecanique', label: 'Mécanique', icon: IconWrench, minNiveau: 'utilisateur' },
