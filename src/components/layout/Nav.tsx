@@ -20,6 +20,7 @@ import {
   IconBuilding,
   IconToolbox,
   IconMenu,
+  IconKey,
 } from '../ui/Icons';
 
 interface NavItem {
@@ -38,6 +39,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/revision', label: 'Révision', icon: IconClipboardCheck, minNiveau: 'utilisateur' },
   { to: '/habillement', label: 'Habillement', icon: IconShirt, minNiveau: 'utilisateur' },
   { to: '/mecanique', label: 'Mécanique', icon: IconWrench, minNiveau: 'utilisateur' },
+  { to: '/prets', label: 'Prêts véhicule', icon: IconKey, minNiveau: 'utilisateur' },
   { to: '/inventaire', label: 'Inventaire', icon: IconBox, minNiveau: 'utilisateur' },
   { to: '/batiment', label: 'Bâtiment', icon: IconBuilding, minNiveau: 'utilisateur' },
   { to: '/petit-materiel', label: 'Petit matériel', icon: IconToolbox, minNiveau: 'utilisateur' },

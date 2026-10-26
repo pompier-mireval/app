@@ -443,7 +443,11 @@ export function PlanningPage() {
             : 'Clique sur une case pour voir qui est affecté.'
         }
       />
-      <h2 className="print-only">{periodeLabel}</h2>
+      <h2 className="print-only">
+        {periodeLabel}
+        {viewMode === 'semaine' && (bloc.type === 'weekend' ? gardeWeekendNom : horaireMode === 'nuit' ? gardeNuitNom : gardeJourNom) &&
+          ` — Garde : ${bloc.type === 'weekend' ? gardeWeekendNom : horaireMode === 'nuit' ? gardeNuitNom : gardeJourNom}`}
+      </h2>
       {error && <ErrorBanner message={error} />}
 
       <Card className="no-print">
@@ -489,7 +493,7 @@ export function PlanningPage() {
               </div>
             )}
           </div>
-          <span className="hide-mobile"><Button variant="secondary" onClick={() => window.print()}>Imprimer</Button></span>
+          <span className="planning-print"><Button variant="secondary" onClick={() => window.print()}>Imprimer</Button></span>
         </div>
 
         {viewMode === 'semaine' && (

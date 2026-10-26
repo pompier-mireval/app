@@ -548,7 +548,7 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
 @media (min-width: 701px) {
   .planning-toolbar { flex-wrap: nowrap; align-items: flex-start; }
   .planning-toolbar > .planning-controls { flex: 1 1 0; min-width: 0; }
-  .planning-toolbar > .hide-mobile { flex-shrink: 0; }
+  .planning-toolbar > .planning-print { flex-shrink: 0; }
 }
 
 /* Lien d'évitement : visible seulement au clavier, saute le menu pour aller au contenu. */

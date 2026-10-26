@@ -3,6 +3,7 @@ import {
   fetchVehicules,
   createVehicule,
   setVehiculeDansPlanning,
+  setVehiculePretable,
   updateVehicule,
   deleteVehicule,
   fetchAllPostes,
@@ -235,6 +236,16 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
     }
   }
 
+  async function handleTogglePretable() {
+    try {
+      await setVehiculePretable(vehicule.id, !vehicule.pretable);
+      onChanged();
+    } catch (err) {
+      console.error(err);
+      onError('Impossible de modifier ce véhicule.');
+    }
+  }
+
   async function handleDeleteVehicule() {
     if (!confirmAction(`Supprimer le véhicule "${vehicule.nom}" et tous ses postes ?`)) return;
     try {
@@ -309,6 +320,10 @@ function VehiculeCard({ vehicule, competences, postes, postesCompetences, onChan
             <label className="checkbox-pill" style={{ marginTop: 6 }}>
               <input type="checkbox" checked={vehicule.dans_planning !== false} onChange={handleTogglePlanning} />
               Pris en compte dans le planning
+            </label>
+            <label className="checkbox-pill" style={{ marginTop: 6 }}>
+              <input type="checkbox" checked={!!vehicule.pretable} onChange={handleTogglePretable} />
+              Peut être prêté
             </label>
           </div>
         )}

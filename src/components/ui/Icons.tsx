@@ -204,3 +204,12 @@ export function IconMenu(props: IconProps) {
     </svg>
   );
 }
+
+export function IconKey(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="7.5" cy="15.5" r="4" />
+      <path d="M10.5 12.5 20 3M16 7l3 3M14 9l2 2" />
+    </svg>
+  );
+}

@@ -45,6 +45,7 @@ export interface Vehicule {
   ordre: number;
   ordre_generation: number;
   dans_planning: boolean; // false : absent du planning et de la génération
+  pretable: boolean; // proposé sur la page Prêts de véhicule
   created_by: string | null;
   created_at: string;
 }
@@ -207,5 +208,20 @@ export interface SignalementBatiment {
 export interface PetitMateriel {
   id: string;
   nom: string;
+  created_at: string;
+}
+
+export type StatutPret = 'en_attente' | 'valide' | 'refuse';
+
+export interface PretVehicule {
+  id: string;
+  vehicule_id: string;
+  emprunteur_id: string;
+  debut: string;
+  fin: string;
+  motif: string | null;
+  statut: StatutPret;
+  valide_par: string | null;
+  valide_at: string | null;
   created_at: string;
 }

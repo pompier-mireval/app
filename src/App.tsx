@@ -17,6 +17,7 @@ const BatimentPage = lazy(() => import('./pages/BatimentPage').then((m) => ({ de
 const ControlePage = lazy(() => import('./pages/ControlePage').then((m) => ({ default: m.ControlePage })));
 const HabillementPage = lazy(() => import('./pages/HabillementPage').then((m) => ({ default: m.HabillementPage })));
 const MecaniquePage = lazy(() => import('./pages/MecaniquePage').then((m) => ({ default: m.MecaniquePage })));
+const PretsPage = lazy(() => import('./pages/PretsPage').then((m) => ({ default: m.PretsPage })));
 const RevisionPage = lazy(() => import('./pages/RevisionPage').then((m) => ({ default: m.RevisionPage })));
 import { MentionsLegalesPage } from './pages/legal/MentionsLegalesPage';
 import { ConfidentialitePage } from './pages/legal/ConfidentialitePage';
@@ -111,6 +112,7 @@ export default function App() {
           <Route path="/agents/:id" element={<AgentProfilePage />} />
           <Route path="/habillement" element={<HabillementPage />} />
           <Route path="/mecanique" element={<MecaniquePage />} />
+          <Route path="/prets" element={<PretsPage />} />
           <Route path="/inventaire" element={<ControlePage key="inventaire" famille="inventaire" />} />
           <Route path="/batiment" element={<BatimentPage />} />
           <Route path="/petit-materiel" element={<ControlePage key="materiel" famille="materiel" />} />

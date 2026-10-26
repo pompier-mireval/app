@@ -60,6 +60,12 @@ export async function setVehiculeDansPlanning(id: string, dansPlanning: boolean)
   if (error) throw error;
 }
 
+// Réservé superadmin (policy RLS) : propose ou retire le véhicule des prêts.
+export async function setVehiculePretable(id: string, pretable: boolean): Promise<void> {
+  const { error } = await supabase.from('vehicules').update({ pretable }).eq('id', id);
+  if (error) throw error;
+}
+
 // Réservé superadmin : réécrit l'ordre de tous les véhicules selon la liste fournie.
 export async function saveVehiculesOrder(idsInOrder: string[]): Promise<void> {
   const results = await Promise.all(idsInOrder.map((id, i) => supabase.from('vehicules').update({ ordre: i + 1 }).eq('id', id)));
