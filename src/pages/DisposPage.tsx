@@ -12,6 +12,8 @@ import { useToast } from '../components/ui/Toast';
 import { confirmAction } from '../lib/confirm';
 import { IconChevronLeft, IconChevronRight } from '../components/ui/Icons';
 
+const PERSO = 'perso';
+
 export function DisposPage() {
   const { agent } = useAuth();
   const { showToast } = useToast();
@@ -30,7 +32,9 @@ export function DisposPage() {
   const weekDays = useMemo(() => weekDaysFrom(weekStart), [weekStart]);
 
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  // '' = rien de choisi, PERSO = heures saisies, sinon id du créneau type.
   const [formCreneau, setFormCreneau] = useState('');
+  const [showAutre, setShowAutre] = useState(false);
   const [formDebut, setFormDebut] = useState('07:00');
   const [formFin, setFormFin] = useState('19:00');
 
@@ -53,7 +57,6 @@ export function DisposPage() {
         setMesGardes(gardes);
         setPostes(p);
         setVehicules(v);
-        if (c.length > 0) setFormCreneau(c[0].id);
       })
       .catch(() => setError('Impossible de charger tes disponibilités.'))
       .finally(() => setLoading(false));
@@ -73,7 +76,8 @@ export function DisposPage() {
   function openDay(day: string) {
     setSelectedDay(day);
     setError(null);
-    setFormCreneau(creneaux[0]?.id ?? '');
+    setFormCreneau('');
+    setShowAutre(false);
     setFormDebut('07:00');
     setFormFin('19:00');
   }
@@ -117,7 +121,7 @@ export function DisposPage() {
 
   function handleAddCustom() {
     addDispos(
-      [formCreneau ? { creneauTypeId: formCreneau } : { heureDebutPerso: formDebut, heureFinPerso: formFin }],
+      [formCreneau === PERSO ? { heureDebutPerso: formDebut, heureFinPerso: formFin } : { creneauTypeId: formCreneau }],
       'Disponibilité enregistrée.'
     );
   }
@@ -223,24 +227,28 @@ export function DisposPage() {
             </div>
 
             <div className="btn-row">
-              <Button onClick={() => handleQuick('24h')} disabled={saving || deleting || (aCote(selectedDay, 'jour') && aCote(selectedDay, 'nuit'))}>24h</Button>
+              <Button variant="secondary" onClick={() => handleQuick('24h')} disabled={saving || deleting || (aCote(selectedDay, 'jour') && aCote(selectedDay, 'nuit'))}>24h</Button>
               <Button variant="secondary" onClick={() => handleQuick('jour')} disabled={saving || deleting || aCote(selectedDay, 'jour')}>Jour</Button>
               <Button variant="secondary" onClick={() => handleQuick('nuit')} disabled={saving || deleting || aCote(selectedDay, 'nuit')}>Nuit</Button>
+              <Button variant="secondary" onClick={() => setShowAutre((v) => !v)} aria-expanded={showAutre} disabled={saving || deleting}>
+                Autre horaire…
+              </Button>
             </div>
 
-            <details>
-              <summary style={{ fontSize: 12.5, cursor: 'pointer', color: 'var(--text-2)' }}>Autre créneau ou horaire personnalisé</summary>
-              <div className="stack-sm" style={{ marginTop: 8 }}>
-                <Field label="Créneau">
+            {showAutre && (
+              <div className="stack-sm" style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
+                <Field label="Choisis un créneau ou saisis tes heures">
                   <Choice
                     ariaLabel="Créneau"
                     value={formCreneau}
                     onChange={setFormCreneau}
-                    emptyLabel="Personnalisé"
-                    options={creneaux.map((c) => ({ value: c.id, label: c.nom, hint: `${c.heure_debut.slice(0, 5)}–${c.heure_fin.slice(0, 5)}` }))}
+                    options={[
+                      ...creneaux.map((c) => ({ value: c.id, label: c.nom, hint: `${c.heure_debut.slice(0, 5)}–${c.heure_fin.slice(0, 5)}` })),
+                      { value: PERSO, label: 'Horaire personnalisé' },
+                    ]}
                   />
                 </Field>
-                {!formCreneau && (
+                {formCreneau === PERSO && (
                   <div className="field-row">
                     <Field label="Début">
                       <input type="time" className="input" value={formDebut} onChange={(e) => setFormDebut(e.target.value)} />
@@ -251,10 +259,10 @@ export function DisposPage() {
                   </div>
                 )}
                 <div>
-                  <Button variant="secondary" onClick={handleAddCustom} disabled={saving || deleting}>Ajouter ce créneau</Button>
+                  <Button onClick={handleAddCustom} disabled={!formCreneau || saving || deleting}>Ajouter cette disponibilité</Button>
                 </div>
               </div>
-            </details>
+            )}
 
             <div className="field-row">
               <Button variant="secondary" onClick={() => setSelectedDay(null)}>Terminer</Button>

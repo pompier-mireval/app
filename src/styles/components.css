@@ -94,9 +94,9 @@
   background: var(--surface2);
 }
 .checkbox-pill:has(input:checked) {
-  background: var(--brand-soft);
-  border-color: var(--brand);
-  color: var(--brand-strong);
+  background: var(--surface);
+  border-color: var(--text);
+  color: var(--text);
 }
 
 /* ---------- Statut : point coloré + libellé en phrase, pas de pastille MAJUSCULE ---------- */
@@ -472,8 +472,12 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
   text-align: left;
 }
 .choice-group.compact .choice-pill { padding: 6px 12px; min-height: 34px; font-size: 12px; }
-.choice-pill:hover { border-color: var(--brand); }
-.choice-pill.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand-ink); font-weight: 600; }
+/* Sélection en gris foncé + ✓ : le rouge reste réservé aux boutons d'action,
+   sinon l'option choisie par défaut passe pour un bouton à appuyer. */
+.choice-pill:hover { border-color: var(--text-3); }
+.choice-pill.active { background: var(--text); border-color: var(--text); color: var(--surface); font-weight: 600; }
+.choice-pill.active::before { content: '✓ '; }
+.choice-pill.active .choice-hint { color: inherit; opacity: 0.8; }
 .choice-hint { color: var(--text-3); font-weight: 400; font-size: 12px; }
 
 .choice-list { border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 260px; overflow-y: auto; background: var(--surface); }
@@ -484,7 +488,7 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
 }
 .choice-row:last-child { border-bottom: none; }
 .choice-row:hover { background: var(--surface2); }
-.choice-row.active { background: var(--brand-soft); color: var(--brand-ink); font-weight: 600; }
+.choice-row.active { background: var(--surface2); color: var(--text); font-weight: 600; box-shadow: inset 3px 0 0 var(--text); }
 .choice-empty { padding: 12px; font-size: 13px; color: var(--text-3); }
 
 .choice-trigger {
@@ -492,7 +496,7 @@ input[type='checkbox']:focus-visible { outline: 2px solid var(--brand); outline-
   background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm);
   padding: 8px 12px; min-height: 40px; font-size: 13px; color: var(--text); text-align: left;
 }
-.choice-trigger:hover { border-color: var(--brand); }
+.choice-trigger:hover { border-color: var(--text-3); }
 
 @media (max-width: 700px) {
   .choice-pill { min-height: 44px; }
